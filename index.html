@@ -173,25 +173,30 @@
     .pipeline-bar {
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border-color);
-      padding: 12px 20px;
+      padding: 8px 12px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
 
+    .pipeline-bar::-webkit-scrollbar { display: none; }
+
     .node {
-      flex: 1;
+      flex: 1 1 0px;
+      min-width: 100px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       background: #091322;
       border: 1px solid rgba(16, 185, 129, 0.35);
-      padding: 10px 12px;
-      border-radius: 10px;
+      padding: 6px 8px;
+      border-radius: 8px;
       font-size: 11px;
       color: var(--text-muted);
       transition: all 0.3s ease;
+      white-space: nowrap;
     }
 
     .node:hover {
@@ -199,18 +204,19 @@
       box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
     }
 
-    .node-icon { font-size: 16px; }
-    .node-status { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+    .node-icon { font-size: 14px; flex-shrink: 0; }
+    .node-status { font-size: 9px; color: var(--text-dim); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; }
 
     .status-pill {
-      font-size: 9px;
+      font-size: 8px;
       font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 1px 4px;
+      border-radius: 3px;
       background: rgba(16, 185, 129, 0.15);
       color: #10b981;
       border: 1px solid rgba(16, 185, 129, 0.3);
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
     }
 
     .node.active {
