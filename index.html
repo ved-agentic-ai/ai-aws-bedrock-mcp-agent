@@ -169,14 +169,14 @@
       min-width: 0;
     }
 
-    /* VISUAL AGENTIC PIPELINE PIPELINE */
+    /* VISUAL AGENTIC PIPELINE BAR */
     .pipeline-bar {
-      background: var(--bg-surface);
+      background: #090d16;
       border-bottom: 1px solid var(--border-color);
-      padding: 8px 12px;
+      padding: 10px 16px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
       overflow-x: auto;
       scrollbar-width: none;
     }
@@ -185,35 +185,64 @@
 
     .node {
       flex: 1 1 0px;
-      min-width: 100px;
+      min-width: 135px;
       display: flex;
       align-items: center;
-      gap: 6px;
-      background: #091322;
-      border: 1px solid rgba(16, 185, 129, 0.35);
-      padding: 6px 8px;
-      border-radius: 8px;
-      font-size: 11px;
-      color: var(--text-muted);
+      gap: 10px;
+      background: #0f172a;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      padding: 8px 12px;
+      border-radius: 10px;
       transition: all 0.3s ease;
-      white-space: nowrap;
     }
 
     .node:hover {
-      border-color: rgba(16, 185, 129, 0.6);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+      border-color: rgba(56, 189, 248, 0.5);
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
     }
 
-    .node-icon { font-size: 14px; flex-shrink: 0; }
-    .node-status { font-size: 9px; color: var(--text-dim); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; }
+    .node-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .node-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .node-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .node-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: #f8fafc;
+      white-space: nowrap;
+    }
+
+    .node-sub {
+      font-size: 9px;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
     .status-pill {
       font-size: 8px;
       font-weight: 800;
-      padding: 1px 4px;
-      border-radius: 3px;
+      padding: 2px 5px;
+      border-radius: 4px;
       background: rgba(16, 185, 129, 0.15);
-      color: #10b981;
+      color: #34d399;
       border: 1px solid rgba(16, 185, 129, 0.3);
       letter-spacing: 0.3px;
       flex-shrink: 0;
@@ -222,13 +251,11 @@
     .node.active {
       border-color: var(--accent-mcp);
       background: rgba(6, 182, 212, 0.1);
-      color: #fff;
       box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
     }
 
     .node.completed {
       border-color: var(--accent-success);
-      color: var(--accent-success);
     }
 
     /* CHAT STREAM */
@@ -652,56 +679,56 @@
       <div class="pipeline-bar">
         <div class="node" id="node-gateway">
           <span class="node-icon">🌐</span>
-          <div style="flex:1;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <strong style="color:var(--text-main);">API Gateway</strong>
+          <div class="node-body">
+            <div class="node-header">
+              <span class="node-name">API Gateway</span>
               <span class="status-pill" id="st-gateway">200 OK</span>
             </div>
-            <div class="node-status">HTTP Route & Auth</div>
+            <div class="node-sub">HTTP Route &amp; Auth</div>
           </div>
         </div>
 
         <div class="node" id="node-agent">
           <span class="node-icon">🧠</span>
-          <div style="flex:1;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <strong style="color:var(--text-main);">Agent Core</strong>
+          <div class="node-body">
+            <div class="node-header">
+              <span class="node-name">Agent Core</span>
               <span class="status-pill" id="st-agent">OK</span>
             </div>
-            <div class="node-status">Bedrock Converse API</div>
+            <div class="node-sub">Bedrock Converse API</div>
           </div>
         </div>
 
         <div class="node" id="node-mcp">
           <span class="node-icon">🔌</span>
-          <div style="flex:1;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <strong style="color:var(--text-main);">MCP Client</strong>
+          <div class="node-body">
+            <div class="node-header">
+              <span class="node-name">MCP Client</span>
               <span class="status-pill" id="st-mcp">MATCH</span>
             </div>
-            <div class="node-status">tools/list & call</div>
+            <div class="node-sub">tools/list &amp; call</div>
           </div>
         </div>
 
         <div class="node" id="node-lambda">
           <span class="node-icon">⚡</span>
-          <div style="flex:1;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <strong style="color:var(--text-main);">Tool Lambda</strong>
+          <div class="node-body">
+            <div class="node-header">
+              <span class="node-name">Tool Lambda</span>
               <span class="status-pill" id="st-lambda">SUCCESS</span>
             </div>
-            <div class="node-status">Backend execution</div>
+            <div class="node-sub">Backend execution</div>
           </div>
         </div>
 
         <div class="node" id="node-dynamo">
           <span class="node-icon">💾</span>
-          <div style="flex:1;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <strong style="color:var(--text-main);">DynamoDB</strong>
+          <div class="node-body">
+            <div class="node-header">
+              <span class="node-name">DynamoDB</span>
               <span class="status-pill" id="st-dynamo">PERSISTED</span>
             </div>
-            <div class="node-status">Session memory</div>
+            <div class="node-sub">Session memory</div>
           </div>
         </div>
       </div>
