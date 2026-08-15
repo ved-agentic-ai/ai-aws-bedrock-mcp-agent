@@ -22,15 +22,16 @@ Production-grade **Agentic AI Control Center** leveraging **Amazon Bedrock (Amaz
 
 ## 🗺️ System Architecture
 
-```mermaid
-graph TD
-    Client["🌐 Client Browser (Agent Control Center)"] -->|HTTP POST /api/chat| APIGW["📡 Amazon API Gateway"]
-    APIGW -->|Trigger| Runtime["🧠 AWS Lambda (Bedrock Agent Runtime)"]
-    Runtime <-->|Converse API / Tool Discovery| Bedrock["🤖 Amazon Bedrock (Nova Micro / Claude)"]
-    Runtime <-->|Invoke JSON-RPC| MCPServer["🔌 AWS Lambda (MCP Tool Server)"]
-    MCPServer <-->|PutItem / Query| Dynamo["💾 Amazon DynamoDB (Session Memory)"]
-    MCPServer <-->|GetObject / PutObject| S3["🪣 Amazon S3 (Knowledge Base)"]
-```
+![AWS Agentic MCP Architecture](docs/aws_architecture_diagram.svg)
+
+### Data Flow Sequence:
+1. **Client App**: Sends user prompt via HTTP POST to Amazon API Gateway.
+2. **API Gateway**: Provides REST endpoint validation and forwards payload to Lambda.
+3. **Bedrock Agent Runtime (Lambda)**: Invokes Amazon Bedrock Converse API with prompt and MCP tools schema.
+4. **Amazon Bedrock (Nova Micro)**: Executes reasoning loop and returns `toolUse` stop-reason.
+5. **MCP Tool Server (Lambda)**: Handles `tools/call` JSON-RPC specification and performs database operations.
+6. **Amazon DynamoDB**: Stores and queries session memory items with automatic 24h TTL.
+7. **Amazon S3**: Stores knowledge base documents and prompt templates.
 
 ---
 
