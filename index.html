@@ -317,6 +317,58 @@
       border-color: var(--accent-success);
     }
 
+    /* REAL-TIME EVENT STREAM LOGS CARD */
+    .event-stream-card {
+      background: #060b17;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .event-stream-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .event-stream-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .clear-logs-btn {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .clear-logs-btn:hover { color: #94a3b8; }
+
+    .event-stream-body {
+      max-height: 150px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .tag-system { background: rgba(59, 130, 246, 0.25); color: #60a5fa; }
+    .tag-gateway { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+    .tag-mcp { background: rgba(6, 182, 212, 0.25); color: #22d3ee; }
+
     /* CHAT STREAM */
     .chat-messages {
       flex: 1;
@@ -810,6 +862,31 @@
             <div>
               <div class="node-card-title">DynamoDB</div>
               <div class="node-card-sub">Session memory</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- REAL-TIME PROTOCOL EVENT STREAM LOGS CARD -->
+        <div class="event-stream-card">
+          <div class="event-stream-header">
+            <span class="event-stream-title">📜 Real-Time Protocol Event Stream</span>
+            <button class="clear-logs-btn" onclick="clearStreamLogs()">Clear Logs</button>
+          </div>
+          <div class="event-stream-body" id="protocol-log-stream">
+            <div class="log-line">
+              <span class="log-time">16:00:00</span>
+              <span class="log-tag tag-system">SYSTEM</span>
+              <span class="log-msg">AWS Bedrock AgentCore &amp; MCP visualizer ready. Mode: Live AWS.</span>
+            </div>
+            <div class="log-line">
+              <span class="log-time">16:16:21</span>
+              <span class="log-tag tag-gateway">API GW</span>
+              <span class="log-msg">Sending HTTP POST to AWS Bedrock Lambda / API Gateway...</span>
+            </div>
+            <div class="log-line">
+              <span class="log-time">16:16:22</span>
+              <span class="log-tag tag-mcp">MCP</span>
+              <span class="log-msg">Live AWS Execution: Tool [save_session_data] executed on Lambda &amp; DynamoDB.</span>
             </div>
           </div>
         </div>
@@ -1617,7 +1694,8 @@ def handler(event, context):
     }
 
     function addLog(tag, tagClass, message) {
-      const stream = document.getElementById('terminal-stream');
+      const stream = document.getElementById('protocol-log-stream') || document.getElementById('terminal-stream');
+      if (!stream) return;
       const time = new Date().toTimeString().split(' ')[0];
       stream.innerHTML += `
         <div class="log-line">
@@ -1627,6 +1705,13 @@ def handler(event, context):
         </div>
       `;
       stream.scrollTop = stream.scrollHeight;
+    }
+
+    function clearStreamLogs() {
+      const stream = document.getElementById('protocol-log-stream');
+      if (stream) {
+        stream.innerHTML = `<div class="log-line"><span class="log-time">${new Date().toTimeString().split(' ')[0]}</span><span class="log-tag tag-system">SYSTEM</span><span class="log-msg">Logs cleared.</span></div>`;
+      }
     }
 
     function triggerDeploy() {
