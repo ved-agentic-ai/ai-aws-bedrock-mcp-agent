@@ -1,0 +1,492 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  1-Click Deploy & Teardown: Enterprise Amazon Bedrock AI Agent with MCP (Model Context Protocol) Architecture.
+  100% Serverless, Free-Tier Compliant, and Teardown friendly.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+    Description: Environment stage name
+
+  BedrockModelId:
+    Type: String
+    Default: us.amazon.nova-micro-v1:0
+    Description: >
+      Bedrock Model ID to use for AI Agent reasoning (e.g. us.amazon.nova-micro-v1:0, 
+      us.anthropic.claude-3-haiku-20240307-v1:0, or amazon.titan-text-express-v1)
+
+Resources:
+
+  # =========================================================================
+  # 1. STORAGE & MEMORY LAYER (Free Tier Compliant)
+  # =========================================================================
+
+  AgentKnowledgeBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  AgentMemoryTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: SessionId
+          AttributeType: S
+        - AttributeName: Timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: SessionId
+          KeyType: HASH
+        - AttributeName: Timestamp
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: TTL
+        Enabled: true
+
+  # =========================================================================
+  # 2. SECURITY & IAM LAYER
+  # =========================================================================
+
+  AgentUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${AWS::StackName}-UserPool
+      AutoVerifiedAttributes:
+        - email
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+
+  AgentUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${AWS::StackName}-AppClient
+      UserPoolId: !Ref AgentUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AgentServicePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # CloudWatch Logging
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              
+              # Amazon Bedrock LLM Invoke
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource: "*"
+
+              # Lambda Inter-Function Invocation for MCP Server
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: "*"
+              
+              # DynamoDB Memory access
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource: !GetAtt AgentMemoryTable.Arn
+              
+              # S3 Knowledge base access
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt AgentKnowledgeBucket.Arn
+                  - !Sub ${AgentKnowledgeBucket.Arn}/*
+
+  # =========================================================================
+  # 3. COMPUTATION & MCP LAYER (AWS Lambda Serverless Functions)
+  # =========================================================================
+
+  # MCP Tool Server Function (Implements MCP tool specifications & invocation)
+  McpToolServerFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-McpToolServer
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: index.handler
+      Timeout: 30
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AgentMemoryTable
+          BUCKET_NAME: !Ref AgentKnowledgeBucket
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import boto3
+          import time
+
+          from boto3.dynamodb.conditions import Key
+
+          dynamodb = boto3.resource('dynamodb')
+
+          def list_mcp_tools():
+              """Returns standard MCP tool declarations."""
+              return [
+                  {
+                      "name": "query_database",
+                      "description": "Query session history or stored state from DynamoDB",
+                      "input_schema": {
+                          "type": "object",
+                          "properties": {
+                              "session_id": {"type": "string", "description": "Unique session identifier"}
+                          },
+                          "required": ["session_id"]
+                      }
+                  },
+                  {
+                      "name": "save_session_data",
+                      "description": "Store state or response summary into session memory",
+                      "input_schema": {
+                          "type": "object",
+                          "properties": {
+                              "session_id": {"type": "string", "description": "Session ID"},
+                              "content": {"type": "string", "description": "Content to store"}
+                          },
+                          "required": ["session_id", "content"]
+                      }
+                  }
+              ]
+
+          def execute_mcp_tool(tool_name, arguments):
+              """Executes tool calls based on MCP protocol request."""
+              if tool_name == "query_database":
+                  session_id = arguments.get("session_id") or arguments.get("sessionId") or "session_101"
+                  table = dynamodb.Table(os.environ['TABLE_NAME'])
+                  res = table.query(
+                      KeyConditionExpression=Key('SessionId').eq(str(session_id)),
+                      ScanIndexForward=False,
+                      Limit=10
+                  )
+                  items = res.get('Items', [])
+                  for item in items:
+                      for k, v in list(item.items()):
+                          if hasattr(v, '__float__'):
+                              item[k] = float(v)
+                  return {"status": "success", "items": items, "count": len(items)}
+
+              elif tool_name == "save_session_data":
+                  session_id = arguments.get("session_id") or arguments.get("sessionId") or "session_101"
+                  content = arguments.get("content") or arguments.get("data") or "User interaction record"
+                  table = dynamodb.Table(os.environ['TABLE_NAME'])
+                  now = int(time.time())
+                  table.put_item(Item={
+                      'SessionId': str(session_id),
+                      'Timestamp': now,
+                      'Content': str(content),
+                      'TTL': now + 86400
+                  })
+                  return {"status": "success", "message": f"Successfully stored session item for {session_id} in DynamoDB table!"}
+
+              return {"error": f"Tool {tool_name} not found"}
+
+          def handler(event, context):
+              try:
+                  body = json.loads(event.get('body', '{}')) if isinstance(event.get('body'), str) else event.get('body', {})
+                  action = body.get('action', 'tools/list')
+
+                  if action == 'tools/list':
+                      return {
+                          "statusCode": 200,
+                          "headers": {"Content-Type": "application/json"},
+                          "body": json.dumps({"tools": list_mcp_tools()})
+                      }
+                  elif action == 'tools/call':
+                      name = body.get('name')
+                      args = body.get('arguments', {})
+                      result = execute_mcp_tool(name, args)
+                      return {
+                          "statusCode": 200,
+                          "headers": {"Content-Type": "application/json"},
+                          "body": json.dumps({"result": result})
+                      }
+                  
+                  return {
+                      "statusCode": 400,
+                      "body": json.dumps({"error": "Invalid action"})
+                  }
+              except Exception as e:
+                  return {
+                      "statusCode": 500,
+                      "body": json.dumps({"error": str(e)})
+                  }
+
+  # Bedrock Agent Runtime Function (Orchestrates Reasoning, MCP protocol & Bedrock LLM)
+  BedrockAgentRuntimeFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-AgentRuntime
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: index.handler
+      Timeout: 60
+      Environment:
+        Variables:
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+          MCP_SERVER_FUNCTION: !Ref McpToolServerFunction
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import boto3
+
+          bedrock_runtime = boto3.client('bedrock-runtime')
+          lambda_client = boto3.client('lambda')
+
+          def call_mcp_tool_server(action, name=None, arguments=None):
+              payload = {"action": action}
+              if name:
+                  payload["name"] = name
+              if arguments:
+                  payload["arguments"] = arguments
+              
+              res = lambda_client.invoke(
+                  FunctionName=os.environ['MCP_SERVER_FUNCTION'],
+                  InvocationType='RequestResponse',
+                  Payload=json.dumps({"body": json.dumps(payload)})
+              )
+              res_payload = json.loads(res['Payload'].read().decode('utf-8'))
+              return json.loads(res_payload.get('body', '{}'))
+
+          def handler(event, context):
+              try:
+                  body = json.loads(event.get('body', '{}')) if isinstance(event.get('body'), str) else event.get('body', {})
+                  user_prompt = body.get('prompt', 'Hello AWS Bedrock MCP Agent!')
+                  session_id = body.get('session_id', 'session_001')
+
+                  # Step 1: Discover available MCP tools via MCP Server
+                  mcp_tools_res = call_mcp_tool_server('tools/list')
+                  tools_list = mcp_tools_res.get('tools', [])
+
+                  # Convert MCP schema to Bedrock Converse API Tool Config Format
+                  bedrock_tools = []
+                  for t in tools_list:
+                      bedrock_tools.append({
+                          "toolSpec": {
+                              "name": t["name"],
+                              "description": t["description"],
+                              "inputSchema": {
+                                  "json": t["input_schema"]
+                              }
+                          }
+                      })
+
+                  # System Persona Prompt to ensure warm, direct, ChatGPT-like conversational responses
+                  system_prompt = [
+                      {
+                          "text": (
+                              "You are Nova AI Assistant, a warm, highly intelligent, and friendly AI companion powered by AWS Bedrock & Model Context Protocol (MCP).\n\n"
+                              "Core Persona Guidelines:\n"
+                              "1. ALWAYS address the user directly in first-person ('I have retrieved...', 'Here is what you requested...', 'I am happy to help!'). NEVER speak in the third person or write internal monologues like 'The User asked...'.\n"
+                              "2. You can answer ANY question on ANY topic (coding, science, creative writing, explanations, general advice, logic, tech stack, etc.) just like ChatGPT.\n"
+                              "3. Format all responses using clear, beautifully structured Markdown with bold titles, bullet points, numbered lists, and relevant emojis.\n"
+                              "4. Whenever you invoke or process MCP tools (query_database, save_session_data), present the retrieved or stored data in a sleek, human-friendly summary rather than technical dumps."
+                          )
+                      }
+                  ]
+
+                  # Step 2: Invoke Bedrock Converse API with prompt, system persona, and tools
+                  model_id = os.environ.get('BEDROCK_MODEL_ID', 'us.amazon.nova-micro-v1:0')
+                  messages = [
+                      {
+                          "role": "user",
+                          "content": [{"text": user_prompt}]
+                      }
+                  ]
+
+                  response = bedrock_runtime.converse(
+                      modelId=model_id,
+                      messages=messages,
+                      system=system_prompt,
+                      toolConfig={"tools": bedrock_tools} if bedrock_tools else None
+                  )
+
+                  output_message = response['output']['message']
+                  stop_reason = response.get('stopReason')
+
+                  # Handle tool call if requested by Bedrock LLM reasoning loop
+                  if stop_reason == 'tool_use':
+                      tool_requests = [c for c in output_message['content'] if 'toolUse' in c]
+                      tool_results = []
+
+                      for tr in tool_requests:
+                          t_use = tr['toolUse']
+                          t_name = t_use['name']
+                          t_args = t_use['input']
+                          if 'session_id' not in t_args:
+                              t_args['session_id'] = session_id
+                          
+                          # Execute tool via MCP Server
+                          exec_res = call_mcp_tool_server('tools/call', name=t_name, arguments=t_args)
+                          
+                          tool_results.append({
+                              "toolResult": {
+                                  "toolUseId": t_use['toolUseId'],
+                                  "content": [{"json": exec_res.get('result', {})}]
+                              }
+                          })
+
+                      # Append assistant response & tool execution results to Bedrock conversation
+                      messages.append(output_message)
+                      messages.append({
+                          "role": "user",
+                          "content": tool_results
+                      })
+
+                      # Second call to Bedrock to synthesize final user response
+                      final_response = bedrock_runtime.converse(
+                          modelId=model_id,
+                          messages=messages,
+                          system=system_prompt,
+                          toolConfig={"tools": bedrock_tools} if bedrock_tools else None
+                      )
+                      final_content = final_response['output']['message']['content']
+                      final_text = "".join([block.get('text', '') for block in final_content if 'text' in block])
+                      if not final_text:
+                          final_text = "Session data processed successfully via MCP tool & stored in DynamoDB table!"
+
+                      return {
+                          "statusCode": 200,
+                          "headers": {"Content-Type": "application/json"},
+                          "body": json.dumps({
+                              "response": final_text,
+                              "mcp_tools_executed": [tr['toolUse']['name'] for tr in tool_requests]
+                          })
+                      }
+                  else:
+                      final_text = output_message['content'][0]['text']
+                      return {
+                          "statusCode": 200,
+                          "headers": {"Content-Type": "application/json"},
+                          "body": json.dumps({"response": final_text})
+                      }
+
+              except Exception as e:
+                  return {
+                      "statusCode": 500,
+                      "headers": {"Content-Type": "application/json"},
+                      "body": json.dumps({"error": str(e)})
+                  }
+
+  # =========================================================================
+  # 4. ENTRY & API GATEWAY LAYER
+  # =========================================================================
+
+  AgentHttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub ${AWS::StackName}-HttpApi
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - "*"
+
+  AgentApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref AgentHttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt BedrockAgentRuntimeFunction.Arn
+      PayloadFormatVersion: "2.0"
+
+  AgentApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref AgentHttpApi
+      RouteKey: "POST /chat"
+      Target: !Sub "integrations/${AgentApiIntegration}"
+
+  AgentApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref AgentHttpApi
+      StageName: "$default"
+      AutoDeploy: true
+
+  LambdaApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref BedrockAgentRuntimeFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AgentHttpApi}/*/*/chat"
+
+  # CloudWatch Retention Policy (Prevents long term storage costs)
+  ToolLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${McpToolServerFunction}"
+      RetentionInDays: 7
+
+  AgentLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${BedrockAgentRuntimeFunction}"
+      RetentionInDays: 7
+
+Outputs:
+  ApiEndpoint:
+    Description: "HTTP API Gateway Endpoint URL for AI Agent requests"
+    Value: !Sub "https://${AgentHttpApi}.execute-api.${AWS::Region}.amazonaws.com/chat"
+  
+  CognitoUserPoolId:
+    Description: "Cognito User Pool ID"
+    Value: !Ref AgentUserPool
+
+  CognitoClientId:
+    Description: "Cognito App Client ID"
+    Value: !Ref AgentUserPoolClient
+
+  S3BucketName:
+    Description: "Knowledge Base S3 Bucket Name"
+    Value: !Ref AgentKnowledgeBucket
+
+  DynamoDBTableName:
+    Description: "Session Memory DynamoDB Table Name"
+    Value: !Ref AgentMemoryTable

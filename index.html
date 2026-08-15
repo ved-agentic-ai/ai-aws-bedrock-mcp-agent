@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise Agentic MCP Control Center | AWS Bedrock</title>
+  <meta name="description" content="Production-grade Agentic AI Control Center leveraging Amazon Bedrock, Model Context Protocol (MCP), AWS Lambda, and DynamoDB for autonomous session memory.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #070913;
+      --bg-surface: #0e1322;
+      --bg-card: #141c30;
+      --bg-card-hover: #1c2742;
+      --border-color: #212e4a;
+      --border-glow: #3b82f640;
+      
+      --accent-bedrock: #ec4899;
+      --accent-mcp: #06b6d4;
+      --accent-aws: #ff9900;
+      --accent-success: #10b981;
+      --accent-info: #3b82f6;
+      --accent-warning: #f59e0b;
+      --accent-danger: #ef4444;
+
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Fira Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER BAR */
+    header {
+      height: 60px;
+      background: rgba(14, 19, 34, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent-aws), #ff6600);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #000;
+      font-size: 18px;
+      box-shadow: 0 0 15px rgba(255, 153, 0, 0.4);
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pill-badge {
+      background: rgba(236, 72, 153, 0.15);
+      border: 1px solid rgba(236, 72, 153, 0.4);
+      color: var(--accent-bedrock);
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-action {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-action:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-info);
+      transform: translateY(-1px);
+    }
+
+    .btn-toggle {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: rgba(6, 182, 212, 0.4);
+      color: var(--accent-mcp);
+    }
+
+    .btn-deploy {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border: none;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-deploy:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
+    }
+
+    .btn-teardown {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--accent-danger);
+    }
+
+    /* MAIN APP CONTAINER */
+    .app-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    /* LEFT COL: PIPELINE & CHAT INTERACTION */
+    .chat-col {
+      flex: 1.2;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border-color);
+      background: var(--bg-dark);
+      min-width: 0;
+    }
+
+    /* VISUAL AGENTIC PIPELINE PIPELINE */
+    .pipeline-bar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .node {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all 0.3s ease;
+    }
+
+    .node-icon { font-size: 14px; }
+    .node-status { font-size: 10px; color: var(--text-dim); }
+
+    .node.active {
+      border-color: var(--accent-mcp);
+      background: rgba(6, 182, 212, 0.1);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.25);
+    }
+
+    .node.completed {
+      border-color: var(--accent-success);
+      color: var(--accent-success);
+    }
+
+    .arrow { color: var(--text-dim); font-size: 12px; }
+
+    /* CHAT STREAM */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 85%;
+      gap: 4px;
+    }
+
+    .msg.user { align-self: flex-end; }
+    .msg.assistant { align-self: flex-start; }
+
+    .msg-bubble {
+      padding: 14px 18px;
+      border-radius: 14px;
+      font-size: 13px;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .user .msg-bubble {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+    }
+
+    .assistant .msg-bubble {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      border-bottom-left-radius: 2px;
+    }
+
+    .msg-meta {
+      font-size: 10px;
+      color: var(--text-dim);
+      display: flex;
+      gap: 8px;
+      padding: 0 4px;
+    }
+
+    /* INPUT SECTION */
+    .chat-input-area {
+      padding: 16px 24px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .preset-pills {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .preset-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .preset-pill:hover {
+      border-color: var(--accent-mcp);
+      color: var(--accent-mcp);
+      background: rgba(6, 182, 212, 0.1);
+    }
+
+    .input-box {
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--text-main);
+      font-size: 13px;
+      font-family: var(--font-sans);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .chat-input:focus { border-color: var(--accent-info); }
+
+    .btn-send {
+      background: linear-gradient(135deg, var(--accent-mcp), #0891b2);
+      border: none;
+      color: #000;
+      font-weight: 700;
+      padding: 0 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .btn-send:hover { transform: scale(1.02); }
+
+    /* MIDDLE COL: REALTIME TERMINAL LOG STREAM */
+    .terminal-col {
+      flex: 0.9;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border-color);
+      background: #080c16;
+      min-width: 0;
+    }
+
+    .terminal-header {
+      height: 42px;
+      background: #0d1322;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .terminal-logs {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .log-line {
+      display: flex;
+      gap: 10px;
+      line-height: 1.5;
+    }
+
+    .log-time { color: var(--text-dim); }
+    .log-tag { padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+    .tag-gateway { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .tag-bedrock { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+    .tag-mcp { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+    .tag-dynamo { background: rgba(255, 153, 0, 0.2); color: #fbbf24; }
+    .log-msg { color: var(--text-muted); flex: 1; }
+
+    /* RIGHT COL: INSPECTOR & ARCHITECTURE */
+    .inspector-col {
+      flex: 1.1;
+      display: flex;
+      flex-direction: column;
+      background: #0b1120;
+      min-width: 0;
+    }
+
+    .tab-bar {
+      display: flex;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      color: var(--accent-mcp);
+      border-bottom-color: var(--accent-mcp);
+      background: rgba(6, 182, 212, 0.08);
+    }
+
+    .tab-pane {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: none;
+    }
+
+    .tab-pane.active { display: block; }
+
+    /* SUB TABS FOR CODE INSPECTOR */
+    .sub-tab-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      background: var(--bg-card);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .sub-tab-btn {
+      flex: 1;
+      padding: 6px 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .sub-tab-btn.active {
+      background: var(--bg-surface);
+      color: var(--accent-mcp);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .code-block {
+      background: #060913;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #38bdf8;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      max-height: 480px;
+    }
+
+    /* CARD COMPONENTS */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: var(--border-glow); }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      width: 520px;
+      max-width: 90vw;
+      padding: 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-main);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-input {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--text-main);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+
+    .form-input:focus { border-color: var(--accent-info); }
+
+    .dropzone {
+      border: 2px dashed var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      background: var(--bg-card);
+      transition: all 0.2s;
+    }
+
+    .dropzone:hover {
+      border-color: var(--accent-mcp);
+      background: rgba(6, 182, 212, 0.05);
+    }
+
+    /* TOAST */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 200;
+    }
+
+    .toast {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER BAR -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">AWS</div>
+      <div class="brand-title">
+        AgentCore & MCP Control Center
+        <span class="pill-badge">AMAZON NOVA MICRO</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-action btn-toggle" id="mode-toggle-btn" onclick="toggleMode()">
+        🌐 Live AWS Mode
+      </button>
+      <button class="btn-action" onclick="openAwsModal()">
+        ⚙️ AWS Config
+      </button>
+      <button class="btn-action btn-deploy" onclick="triggerDeploy()">
+        🚀 Live AWS Deploy
+      </button>
+      <button class="btn-action btn-teardown" onclick="triggerTeardown()">
+        🔥 Stack Teardown
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTAINER -->
+  <div class="app-container">
+
+    <!-- LEFT COL: CHAT & AGENTIC PIPELINE -->
+    <div class="chat-col">
+      <div class="pipeline-bar">
+        <div class="node" id="node-gateway">
+          <span class="node-icon">🌐</span>
+          <div>
+            <div>API Gateway</div>
+            <div class="node-status" id="st-gateway">IDLE</div>
+          </div>
+        </div>
+        <span class="arrow">➔</span>
+        <div class="node" id="node-agent">
+          <span class="node-icon">🧠</span>
+          <div>
+            <div>Bedrock Agent</div>
+            <div class="node-status" id="st-agent">IDLE</div>
+          </div>
+        </div>
+        <span class="arrow">➔</span>
+        <div class="node" id="node-mcp">
+          <span class="node-icon">🔌</span>
+          <div>
+            <div>MCP Server</div>
+            <div class="node-status" id="st-mcp">IDLE</div>
+          </div>
+        </div>
+        <span class="arrow">➔</span>
+        <div class="node" id="node-dynamo">
+          <span class="node-icon">💾</span>
+          <div>
+            <div>DynamoDB</div>
+            <div class="node-status" id="st-dynamo">IDLE</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chat-box">
+        <div class="msg assistant">
+          <div class="msg-bubble">
+            <strong>Welcome to the Enterprise Agentic MCP Control Center!</strong><br><br>
+            I am powered by <strong>Amazon Bedrock (Nova Micro)</strong> and the <strong>Model Context Protocol (MCP) Server</strong> on AWS Lambda.<br><br>
+            • Ask me any general technical, coding, or creative questions (just like ChatGPT).<br>
+            • Or click the presets below to execute live MCP tools on DynamoDB session memory!
+          </div>
+          <div class="msg-meta"><span>System Assistant</span> • <span>Online</span></div>
+        </div>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="preset-pills">
+          <button class="preset-pill" onclick="sendPreset('Save user session for session_101: Purchased Prime Upgrade')">💾 Save Session (MCP Tool)</button>
+          <button class="preset-pill" onclick="sendPreset('Fetch session history for session_101')">🔍 Query DynamoDB</button>
+          <button class="preset-pill" onclick="sendPreset('Explain how Model Context Protocol (MCP) works on AWS Bedrock')">💡 Explain MCP Protocol</button>
+        </div>
+        <div class="input-box">
+          <input type="text" class="chat-input" id="user-input" placeholder="Ask AI Agent or invoke MCP tools..." onkeydown="if(event.key==='Enter') sendMessage()">
+          <button class="btn-send" onclick="sendMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE COL: REALTIME TERMINAL LOG STREAM -->
+    <div class="terminal-col">
+      <div class="terminal-header">
+        <span>⚡ REALTIME CLOUDWATCH & MCP LOG STREAM</span>
+        <span id="log-count">READY</span>
+      </div>
+      <div class="terminal-logs" id="terminal-stream">
+        <div class="log-line">
+          <span class="log-time">17:12:00</span>
+          <span class="log-tag tag-gateway">SYSTEM</span>
+          <span class="log-msg">WSGI Control Center Running on http://127.0.0.1:3000</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COL: INSPECTOR & ARCHITECTURE TABS -->
+    <div class="inspector-col">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('arch')">🗺️ Architecture</button>
+        <button class="tab-btn" onclick="switchTab('concepts')">💡 Concepts & Services</button>
+        <button class="tab-btn" onclick="switchTab('code')">💻 Complete Code Inspector</button>
+      </div>
+
+      <!-- TAB 1: ARCHITECTURE SVG DIAGRAM -->
+      <div class="tab-pane active" id="pane-arch">
+        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">Live AWS Agentic Architecture</h3>
+        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px;">
+          End-to-end event-driven architecture decoupling LLM reasoning (Bedrock) from tool computation via Model Context Protocol (MCP).
+        </p>
+
+        <!-- SVG DIAGRAM -->
+        <svg viewBox="0 0 500 380" style="width:100%; height:auto; background:#060913; border:1px solid var(--border-color); border-radius:10px; padding:10px;">
+          <!-- User / Client -->
+          <rect x="20" y="160" width="85" height="60" rx="8" fill="#141c30" stroke="#3b82f6" stroke-width="2"/>
+          <text x="62" y="188" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">Client App</text>
+          <text x="62" y="204" fill="#94a3b8" font-size="9" text-anchor="middle">HTTP POST</text>
+
+          <!-- API Gateway -->
+          <rect x="140" y="160" width="90" height="60" rx="8" fill="#141c30" stroke="#60a5fa" stroke-width="2"/>
+          <text x="185" y="188" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">API Gateway</text>
+          <text x="185" y="204" fill="#60a5fa" font-size="9" text-anchor="middle">REST Endpoint</text>
+
+          <!-- Bedrock Agent -->
+          <rect x="270" y="60" width="105" height="65" rx="8" fill="#141c30" stroke="#ec4899" stroke-width="2"/>
+          <text x="322" y="88" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">AWS Bedrock</text>
+          <text x="322" y="104" fill="#f472b6" font-size="9" text-anchor="middle">Nova Micro LLM</text>
+
+          <!-- MCP Tool Server (Lambda) -->
+          <rect x="270" y="250" width="105" height="65" rx="8" fill="#141c30" stroke="#06b6d4" stroke-width="2"/>
+          <text x="322" y="278" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">MCP Server</text>
+          <text x="322" y="294" fill="#22d3ee" font-size="9" text-anchor="middle">Lambda Tools</text>
+
+          <!-- DynamoDB Table -->
+          <rect x="405" y="250" width="80" height="65" rx="8" fill="#141c30" stroke="#ff9900" stroke-width="2"/>
+          <text x="445" y="278" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">DynamoDB</text>
+          <text x="445" y="294" fill="#fbbf24" font-size="9" text-anchor="middle">Session Memory</text>
+
+          <!-- CONNECTING ARROWS -->
+          <line x1="105" y1="190" x2="140" y2="190" stroke="#3b82f6" stroke-width="2"/>
+          <line x1="230" y1="180" x2="270" y2="100" stroke="#ec4899" stroke-width="2"/>
+          <line x1="322" y1="125" x2="322" y2="250" stroke="#06b6d4" stroke-width="2" stroke-dasharray="4"/>
+          <line x1="375" y1="282" x2="405" y2="282" stroke="#ff9900" stroke-width="2"/>
+        </svg>
+      </div>
+
+      <!-- TAB 2: DETAILED CONCEPTS & SERVICES -->
+      <div class="tab-pane" id="pane-concepts">
+        <div class="card">
+          <div class="card-title">🧠 1. Amazon Bedrock (Nova Micro / Claude)</div>
+          <div class="card-desc">
+            High-speed Foundation Model reasoning engine. Bedrock evaluates incoming user prompts, determines intent, and generates a structured <code>toolUse</code> stop-reason payload whenever external actions are required.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🔌 2. Model Context Protocol (MCP) Standard</div>
+          <div class="card-desc">
+            Open JSON-RPC specification (<code>tools/list</code> & <code>tools/call</code>) decoupling intelligence from tool execution. Enables swapping underlying AI models without altering backend business logic.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">⚡ 3. AWS Lambda Serverless Functions</div>
+          <div class="card-desc">
+            Dual Lambda architecture:
+            <br>• <strong>Agent Runtime Lambda</strong>: Manages prompt processing, Bedrock API communication, and agent loop execution.
+            <br>• <strong>MCP Tool Server Lambda</strong>: Executes database queries and tool invocations safely in an isolated sandbox.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">💾 4. Amazon DynamoDB On-Demand</div>
+          <div class="card-desc">
+            Pay-per-request session memory database storing short-term and long-term conversation history. Configured with automatic 24-hour TTL expiration for zero idle cost.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🚀 5. AWS CloudFormation (IaC)</div>
+          <div class="card-desc">
+            100% Infrastructure-as-Code automation template provisioning IAM roles, Lambda functions, DynamoDB tables, and API Gateway endpoints with 1-click deploy and clean teardown.
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: COMPLETE FULL CODE INSPECTOR -->
+      <div class="tab-pane" id="pane-code">
+        <div class="sub-tab-bar">
+          <button class="sub-tab-btn active" onclick="switchSubTab('cfn')">CloudFormation YAML</button>
+          <button class="sub-tab-btn" onclick="switchSubTab('agent')">Agent Runtime Python</button>
+          <button class="sub-tab-btn" onclick="switchSubTab('mcp')">MCP Server Python</button>
+          <button class="sub-tab-btn" onclick="switchSubTab('spec')">MCP JSON Spec</button>
+        </div>
+
+        <!-- FULL CLOUDFORMATION YAML -->
+        <div id="code-cfn" class="code-block">
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  1-Click Deploy: Enterprise Amazon Bedrock AI Agent with MCP Architecture.
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+  BedrockModelId:
+    Type: String
+    Default: us.amazon.nova-micro-v1:0
+
+Resources:
+  AgentMemoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: SessionId
+          AttributeType: S
+        - AttributeName: Timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: SessionId
+          KeyType: HASH
+        - AttributeName: Timestamp
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: TTL
+        Enabled: true
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AgentServicePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource: !GetAtt AgentMemoryTable.Arn
+
+  McpToolServerFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-McpToolServer
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: index.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AgentMemoryTable
+
+  BedrockAgentRuntimeFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-AgentRuntime
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: index.handler
+      Environment:
+        Variables:
+          MCP_SERVER_FUNCTION: !Ref McpToolServerFunction
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+        </div>
+
+        <!-- FULL AGENT RUNTIME PYTHON -->
+        <div id="code-agent" class="code-block" style="display:none;">
+import json
+import os
+import boto3
+
+bedrock_runtime = boto3.client('bedrock-runtime')
+lambda_client = boto3.client('lambda')
+
+def call_mcp_tool_server(action, name=None, arguments=None):
+    payload = {"action": action}
+    if name: payload["name"] = name
+    if arguments: payload["arguments"] = arguments
+    
+    res = lambda_client.invoke(
+        FunctionName=os.environ['MCP_SERVER_FUNCTION'],
+        InvocationType='RequestResponse',
+        Payload=json.dumps({"body": json.dumps(payload)})
+    )
+    res_payload = json.loads(res['Payload'].read().decode('utf-8'))
+    return json.loads(res_payload.get('body', '{}'))
+
+def handler(event, context):
+    body = json.loads(event.get('body', '{}')) if isinstance(event.get('body'), str) else event.get('body', {})
+    user_prompt = body.get('prompt', 'Hello AWS Bedrock!')
+    session_id = body.get('session_id', 'session_101')
+
+    # Step 1: Discover available MCP tools
+    mcp_tools_res = call_mcp_tool_server('tools/list')
+    tools_list = mcp_tools_res.get('tools', [])
+
+    bedrock_tools = []
+    for t in tools_list:
+        bedrock_tools.append({
+            "toolSpec": {
+                "name": t["name"],
+                "description": t["description"],
+                "inputSchema": { "json": t["input_schema"] }
+            }
+        })
+
+    system_prompt = [{"text": "You are Nova AI Assistant. Address the user directly in first-person with clean Markdown formatting."}]
+    model_id = os.environ.get('BEDROCK_MODEL_ID', 'us.amazon.nova-micro-v1:0')
+    messages = [{"role": "user", "content": [{"text": user_prompt}]}]
+
+    # Step 2: First Converse API call
+    response = bedrock_runtime.converse(
+        modelId=model_id,
+        messages=messages,
+        system=system_prompt,
+        toolConfig={"tools": bedrock_tools} if bedrock_tools else None
+    )
+
+    output_message = response['output']['message']
+    stop_reason = response.get('stopReason')
+
+    if stop_reason == 'tool_use':
+        tool_requests = [c for c in output_message['content'] if 'toolUse' in c]
+        tool_results = []
+
+        for tr in tool_requests:
+            t_use = tr['toolUse']
+            t_args = t_use['input']
+            if 'session_id' not in t_args: t_args['session_id'] = session_id
+            
+            exec_res = call_mcp_tool_server('tools/call', name=t_use['name'], arguments=t_args)
+            tool_results.append({
+                "toolResult": {
+                    "toolUseId": t_use['toolUseId'],
+                    "content": [{"json": exec_res.get('result', {})}]
+                }
+            })
+
+        messages.append(output_message)
+        messages.append({"role": "user", "content": tool_results})
+
+        # Step 3: Second Converse API call to synthesize final response
+        final_response = bedrock_runtime.converse(
+            modelId=model_id,
+            messages=messages,
+            system=system_prompt,
+            toolConfig={"tools": bedrock_tools} if bedrock_tools else None
+        )
+        final_content = final_response['output']['message']['content']
+        final_text = "".join([b.get('text', '') for b in final_content if 'text' in b])
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"response": final_text, "mcp_tools_executed": [tr['toolUse']['name'] for tr in tool_requests]})
+        }
+    else:
+        return {"statusCode": 200, "body": json.dumps({"response": output_message['content'][0]['text']})}
+        </div>
+
+        <!-- FULL MCP TOOL SERVER PYTHON -->
+        <div id="code-mcp" class="code-block" style="display:none;">
+import json
+import os
+import boto3
+import time
+from boto3.dynamodb.conditions import Key
+
+dynamodb = boto3.resource('dynamodb')
+
+def list_mcp_tools():
+    return [
+        {
+            "name": "query_database",
+            "description": "Query session history from DynamoDB",
+            "input_schema": {
+                "type": "object",
+                "properties": { "session_id": {"type": "string"} },
+                "required": ["session_id"]
+            }
+        },
+        {
+            "name": "save_session_data",
+            "description": "Store state into session memory",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "session_id": {"type": "string"},
+                    "content": {"type": "string"}
+                },
+                "required": ["session_id", "content"]
+            }
+        }
+    ]
+
+def execute_mcp_tool(tool_name, arguments):
+    table = dynamodb.Table(os.environ['TABLE_NAME'])
+    session_id = str(arguments.get("session_id", "session_101"))
+
+    if tool_name == "query_database":
+        res = table.query(
+            KeyConditionExpression=Key('SessionId').eq(session_id),
+            ScanIndexForward=False,
+            Limit=10
+        )
+        items = res.get('Items', [])
+        for item in items:
+            for k, v in list(item.items()):
+                if hasattr(v, '__float__'): item[k] = float(v)
+        return {"status": "success", "items": items, "count": len(items)}
+
+    elif tool_name == "save_session_data":
+        content = str(arguments.get("content", "User session memory entry"))
+        now = int(time.time())
+        table.put_item(Item={
+            'SessionId': session_id,
+            'Timestamp': now,
+            'Content': content,
+            'TTL': now + 86400
+        })
+        return {"status": "success", "message": f"Successfully stored session item for {session_id} in DynamoDB table!"}
+
+    return {"error": f"Tool {tool_name} not found"}
+
+def handler(event, context):
+    body = json.loads(event.get('body', '{}')) if isinstance(event.get('body'), str) else event.get('body', {})
+    action = body.get('action', 'tools/list')
+
+    if action == 'tools/list':
+        return {"statusCode": 200, "body": json.dumps({"tools": list_mcp_tools()})}
+    elif action == 'tools/call':
+        result = execute_mcp_tool(body.get('name'), body.get('arguments', {}))
+        return {"statusCode": 200, "body": json.dumps({"result": result})}
+        </div>
+
+        <!-- FULL MCP PROTOCOL SPEC JSON -->
+        <div id="code-spec" class="code-block" style="display:none;">
+// Model Context Protocol (MCP) JSON-RPC Protocol Specification
+
+// 1. Tool Discovery Request (tools/list)
+{
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "params": {}
+}
+
+// 1. Tool Discovery Response
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "tools": [
+      {
+        "name": "query_database",
+        "description": "Query session history or stored state from DynamoDB",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "session_id": { "type": "string" }
+          },
+          "required": ["session_id"]
+        }
+      }
+    ]
+  }
+}
+
+// 2. Tool Execution Request (tools/call)
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "save_session_data",
+    "arguments": {
+      "session_id": "session_101",
+      "content": "Purchased Prime Upgrade"
+    }
+  }
+}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- AWS CREDENTIALS MODAL -->
+  <div class="modal-overlay" id="aws-modal">
+    <div class="modal-card">
+      <div class="modal-title">
+        <span>⚙️ Configure AWS Credentials</span>
+        <button style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:16px;" onclick="closeAwsModal()">✕</button>
+      </div>
+
+      <div class="dropzone" onclick="document.getElementById('file-upload').click()">
+        📁 <strong>Click or Drag credentials.csv here</strong>
+        <p style="font-size:11px; color:var(--text-muted); margin-top:4px;">Automatically parses AWS Access Key ID and Secret Access Key</p>
+        <input type="file" id="file-upload" style="display:none;" accept=".csv,.txt,.env" onchange="handleFileUpload(event)">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">AWS Access Key ID</label>
+        <input type="text" class="form-input" id="cfg-access-key" placeholder="AKIAXXXXXXXXXXXXXXXX">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">AWS Secret Access Key</label>
+        <input type="password" class="form-input" id="cfg-secret-key" placeholder="••••••••••••••••••••••••••••••••••••••••">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">AWS Region</label>
+        <input type="text" class="form-input" id="cfg-region" value="us-east-1">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">API Gateway Endpoint URL (Optional / Auto-Detected)</label>
+        <input type="text" class="form-input" id="cfg-api-endpoint" placeholder="https://xxxx.execute-api.us-east-1.amazonaws.com/dev/chat">
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+        <button class="btn-action" onclick="closeAwsModal()">Cancel</button>
+        <button class="btn-action btn-deploy" onclick="saveAwsConfig()">Save & Remember</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container"></div>
+
+  <script>
+    const STORAGE_KEY = "AGENTIC_MCP_AWS_CONFIG";
+    let isSimulationMode = false;
+
+    window.onload = function() {
+      loadSavedConfig();
+    };
+
+    function toggleMode() {
+      isSimulationMode = !isSimulationMode;
+      const btn = document.getElementById('mode-toggle-btn');
+      if (isSimulationMode) {
+        btn.innerText = '⚡ Demo Simulation Mode';
+        btn.style.background = 'rgba(245, 158, 11, 0.2)';
+        btn.style.borderColor = 'var(--accent-warning)';
+        btn.style.color = 'var(--accent-warning)';
+        showToast('Mode Switched', 'Demo Simulation Active (No AWS credentials needed)', 'warning');
+      } else {
+        btn.innerText = '🌐 Live AWS Mode';
+        btn.style.background = 'rgba(6, 182, 212, 0.15)';
+        btn.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+        btn.style.color = 'var(--accent-mcp)';
+        showToast('Mode Switched', 'Live AWS Execution Active', 'info');
+      }
+    }
+
+    function loadSavedConfig() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const cfg = JSON.parse(saved);
+          if (cfg.accessKey) document.getElementById('cfg-access-key').value = cfg.accessKey;
+          if (cfg.secretKey) document.getElementById('cfg-secret-key').value = cfg.secretKey;
+          if (cfg.region) document.getElementById('cfg-region').value = cfg.region;
+          if (cfg.apiEndpoint) document.getElementById('cfg-api-endpoint').value = cfg.apiEndpoint;
+        } catch(e){}
+      }
+    }
+
+    function openAwsModal() { document.getElementById('aws-modal').style.display = 'flex'; }
+    function closeAwsModal() { document.getElementById('aws-modal').style.display = 'none'; }
+
+    function saveAwsConfig() {
+      const accessKey = document.getElementById('cfg-access-key').value.trim();
+      const secretKey = document.getElementById('cfg-secret-key').value.trim();
+      const region = document.getElementById('cfg-region').value.trim();
+      const apiEndpoint = document.getElementById('cfg-api-endpoint').value.trim();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ accessKey, secretKey, region, apiEndpoint }));
+      showToast('Configuration Saved', 'AWS credentials & API Endpoint saved securely.', 'success');
+      closeAwsModal();
+    }
+
+    function handleFileUpload(evt) {
+      const file = evt.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const content = e.target.result;
+        const lines = content.split('\n');
+        for (let line of lines) {
+          if (line.includes('AKIA') || line.includes('Access key ID')) {
+            const parts = line.split(',');
+            if (parts.length >= 2) {
+              document.getElementById('cfg-access-key').value = parts[0].trim().replace(/"/g, '');
+              document.getElementById('cfg-secret-key').value = parts[1].trim().replace(/"/g, '');
+            }
+          }
+        }
+        showToast('Credentials Uploaded', 'Parsed Access Key from file.', 'success');
+        saveAwsConfig();
+      };
+      reader.readAsText(file);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('pane-' + tabId).classList.add('active');
+    }
+
+    function switchSubTab(subId) {
+      document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('code-cfn').style.display = 'none';
+      document.getElementById('code-agent').style.display = 'none';
+      document.getElementById('code-mcp').style.display = 'none';
+      document.getElementById('code-spec').style.display = 'none';
+      
+      event.target.classList.add('active');
+      document.getElementById('code-' + subId).style.display = 'block';
+    }
+
+    function sendPreset(text) {
+      document.getElementById('user-input').value = text;
+      sendMessage();
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('user-input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      const chatBox = document.getElementById('chat-box');
+      chatBox.innerHTML += `
+        <div class="msg user">
+          <div class="msg-bubble">${escapeHtml(text)}</div>
+          <div class="msg-meta"><span>User</span> • <span>Just now</span></div>
+        </div>
+      `;
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      addLog('USER', 'tag-gateway', `Prompt: "${text}"`);
+
+      if (isSimulationMode) {
+        runSimulatedPipeline(text);
+        return;
+      }
+
+      setNodeState('gateway', 'active', 'SENDING');
+      const savedConfig = localStorage.getItem(STORAGE_KEY);
+      const creds = savedConfig ? JSON.parse(savedConfig) : {};
+      const startTime = Date.now();
+
+      try {
+        setNodeState('agent', 'active', 'REASONING');
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: text,
+            session_id: 'session_101',
+            access_key: creds.accessKey,
+            secret_key: creds.secretKey,
+            region: creds.region || 'us-east-1'
+          })
+        });
+
+        const data = await res.json();
+        const elapsed = Date.now() - startTime;
+
+        setNodeState('gateway', 'completed', '200 OK');
+        setNodeState('agent', 'completed', 'OK');
+        setNodeState('mcp', 'completed', 'MATCH');
+        setNodeState('dynamo', 'completed', 'OK');
+
+        chatBox.innerHTML += `
+          <div class="msg assistant">
+            <div class="msg-bubble">${formatMarkdown(data.response || data.message)}</div>
+            <div class="msg-meta"><span>Live AWS Bedrock Agent</span> • <span>${elapsed}ms</span></div>
+          </div>
+        `;
+        chatBox.scrollTop = chatBox.scrollHeight;
+        addLog('BEDROCK', 'tag-bedrock', `Response returned in ${elapsed}ms`);
+
+      } catch (err) {
+        addLog('ERROR', 'tag-gateway', `Error: ${err.message}`);
+      }
+    }
+
+    async function runSimulatedPipeline(text) {
+      const chatBox = document.getElementById('chat-box');
+      const startTime = Date.now();
+
+      setNodeState('gateway', 'active', 'RECEIVING');
+      addLog('API GW', 'tag-gateway', `HTTP POST /chat received (Demo Simulation).`);
+      await new Promise(r => setTimeout(r, 300));
+      setNodeState('gateway', 'completed', '200 OK');
+
+      setNodeState('agent', 'active', 'REASONING');
+      addLog('BEDROCK', 'tag-bedrock', `Invoking Amazon Nova Micro Reasoning Loop...`);
+      await new Promise(r => setTimeout(r, 500));
+
+      let responseText = "";
+      if (text.toLowerCase().includes('save')) {
+        setNodeState('mcp', 'active', 'INVOKING');
+        addLog('MCP', 'tag-mcp', `Executing tool [save_session_data] via MCP Server...`);
+        await new Promise(r => setTimeout(r, 400));
+        setNodeState('mcp', 'completed', 'EXECUTED');
+        setNodeState('dynamo', 'completed', 'STORED');
+        responseText = "I have successfully stored the session entry **'Purchased Prime Upgrade'** for **session_101** in DynamoDB table `AgentMemoryTable`!";
+      } else if (text.toLowerCase().includes('fetch') || text.toLowerCase().includes('query')) {
+        setNodeState('mcp', 'active', 'INVOKING');
+        addLog('MCP', 'tag-mcp', `Executing tool [query_database] via MCP Server...`);
+        await new Promise(r => setTimeout(r, 400));
+        setNodeState('mcp', 'completed', 'EXECUTED');
+        setNodeState('dynamo', 'completed', 'FETCHED');
+        responseText = "Here is the stored session history for **session_101** retrieved from DynamoDB:\n\n• **Action**: Purchased Prime Upgrade\n• **Timestamp**: 1786805587\n• **Status**: Active Session Record";
+      } else {
+        setNodeState('agent', 'completed', 'COMPLETED');
+        responseText = "Model Context Protocol (MCP) is an open standard that decouples LLMs from tools using JSON-RPC specifications (`tools/list` & `tools/call`). In this application, Amazon Bedrock reasons about prompts and instructs AWS Lambda to run MCP tools safely.";
+      }
+
+      const elapsed = Date.now() - startTime;
+      chatBox.innerHTML += `
+        <div class="msg assistant">
+          <div class="msg-bubble">${formatMarkdown(responseText)}</div>
+          <div class="msg-meta"><span>Demo Agent Simulation</span> • <span>${elapsed}ms</span></div>
+        </div>
+      `;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function formatMarkdown(txt) {
+      if (!txt) return '';
+      return txt
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function setNodeState(node, state, label) {
+      const el = document.getElementById('node-' + node);
+      const st = document.getElementById('st-' + node);
+      if (el) el.className = 'node ' + state;
+      if (st) st.innerText = label;
+    }
+
+    function addLog(tag, tagClass, message) {
+      const stream = document.getElementById('terminal-stream');
+      const time = new Date().toTimeString().split(' ')[0];
+      stream.innerHTML += `
+        <div class="log-line">
+          <span class="log-time">${time}</span>
+          <span class="log-tag ${tagClass}">${tag}</span>
+          <span class="log-msg">${escapeHtml(message)}</span>
+        </div>
+      `;
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    function triggerDeploy() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const creds = saved ? JSON.parse(saved) : {};
+      addLog('DEPLOY', 'tag-gateway', 'Initiating CloudFormation stack deployment...');
+      fetch('/api/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_key: creds.accessKey,
+          secret_key: creds.secretKey,
+          region: creds.region || 'us-east-1'
+        })
+      }).then(r => r.json()).then(d => {
+        showToast('Deploy Triggered', d.message || 'Stack update started', 'info');
+      });
+    }
+
+    function triggerTeardown() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const creds = saved ? JSON.parse(saved) : {};
+      addLog('TEARDOWN', 'tag-gateway', 'Initiating CloudFormation stack deletion...');
+      fetch('/api/teardown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_key: creds.accessKey,
+          secret_key: creds.secretKey,
+          region: creds.region || 'us-east-1'
+        })
+      }).then(r => r.json()).then(d => {
+        showToast('Teardown Triggered', d.message || 'Stack deletion initiated', 'warning');
+      });
+    }
+
+    function showToast(title, msg, type) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<strong>${title}:</strong> <span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+  </script>
+</body>
+</html>

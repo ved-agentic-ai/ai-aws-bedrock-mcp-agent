@@ -1,0 +1,15 @@
+# Python & Environment Exclusions
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+ENV/
+
+# OS & Temp Files
+.DS_Store
+Thumbs.db
+*.log
+scratch/
