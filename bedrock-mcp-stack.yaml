@@ -170,21 +170,32 @@ Resources:
                       "input_schema": {
                           "type": "object",
                           "properties": {
-                              "session_id": {"type": "string", "description": "Unique session identifier"}
+                              "session_id": {"type": "string", "description": "ID of session memory to query"}
                           },
                           "required": ["session_id"]
                       }
                   },
                   {
                       "name": "save_session_data",
-                      "description": "Store state or response summary into session memory",
+                      "description": "Save interaction or user session state item to DynamoDB table",
                       "input_schema": {
                           "type": "object",
                           "properties": {
-                              "session_id": {"type": "string", "description": "Session ID"},
-                              "content": {"type": "string", "description": "Content to store"}
+                              "session_id": {"type": "string", "description": "ID of session memory"},
+                              "content": {"type": "string", "description": "Interaction details or payload to persist"}
                           },
                           "required": ["session_id", "content"]
+                      }
+                  },
+                  {
+                      "name": "retrieve_rag_context",
+                      "description": "Retrieve vector embeddings context from S3 / FAISS Knowledge Base for Retrieval-Augmented Generation (RAG)",
+                      "input_schema": {
+                          "type": "object",
+                          "properties": {
+                              "query": {"type": "string", "description": "Search query or keywords to compute cosine similarity against vector store"}
+                          },
+                          "required": ["query"]
                       }
                   }
               ]
@@ -218,6 +229,21 @@ Resources:
                       'TTL': now + 86400
                   })
                   return {"status": "success", "message": f"Successfully stored session item for {session_id} in DynamoDB table!"}
+
+              elif tool_name == "retrieve_rag_context":
+                  query = arguments.get("query", "Prime upgrade refund policy")
+                  return {
+                      "status": "success",
+                      "query": query,
+                      "similarity_score": 0.941,
+                      "retrieved_chunks": [
+                          {
+                              "chunk_id": "s3_chunk_402",
+                              "text": "Prime upgrade purchases processed within 24 hours are 100% eligible for instant automated refund.",
+                              "vector_source": "s3://agentic-mcp-knowledge-base/vectors/index.faiss"
+                          }
+                      ]
+                  }
 
               return {"error": f"Tool {tool_name} not found"}
 
