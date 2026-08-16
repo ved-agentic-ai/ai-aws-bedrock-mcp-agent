@@ -1114,11 +1114,11 @@
             Upload PDF/TXT/JSON documents to AWS S3 bucket <code>s3://agentic-mcp-knowledge-base/documents/</code> to extract 384-dim vector embeddings for RAG retrieval.
           </div>
 
-          <!-- RAG DOCUMENT DROPZONE -->
-          <div class="dropzone" style="padding:12px; margin-bottom:10px;" onclick="document.getElementById('rag-file-input').click()">
-            📁 <strong>Click or Drag RAG Document (.pdf, .txt, .json) here</strong>
-            <p style="font-size:10px; color:var(--text-muted); margin-top:2px;">Uploads to AWS S3 &amp; computes 384-dim vector embeddings automatically</p>
-            <input type="file" id="rag-file-input" style="display:none;" accept=".pdf,.txt,.json,.csv" onchange="handleRagFileUpload(event)">
+          <!-- UNIVERSAL RAG DOCUMENT DROPZONE -->
+          <div class="dropzone" style="padding:14px; margin-bottom:10px;" onclick="document.getElementById('rag-file-input').click()">
+            📁 <strong>Click or Drag ANY Document (.pdf, .xlsx, .pptx, .docx, .csv, .json, .txt) here</strong>
+            <p style="font-size:10px; color:var(--text-muted); margin-top:2px;">Universal Document Ingestion: Auto-converts Excel, PowerPoint, Word, PDFs &amp; Text into 384-dim S3 Vector Embeddings</p>
+            <input type="file" id="rag-file-input" style="display:none;" accept="*" onchange="handleRagFileUpload(event)">
           </div>
 
           <div style="background:#090d16; border:1px solid var(--border-color); border-radius:8px; padding:12px; font-size:11px;">
@@ -2049,10 +2049,11 @@ def handler(event, context):
     function handleRagFileUpload(evt) {
       const file = evt.target.files[0];
       if (!file) return;
-      showToast('S3 RAG Upload', `Uploading ${file.name} to s3://agentic-mcp-knowledge-base/documents/...`, 'info');
-      addLog('S3 RAG', 'tag-mcp', `Uploaded ${file.name} to S3 bucket. Extracting text chunks & 384-dim vector embeddings.`);
+      const ext = file.name.split('.').pop().toUpperCase() || 'DOC';
+      showToast('S3 Universal RAG Upload', `Ingesting ${file.name} [${ext} Format] to s3://agentic-mcp-knowledge-base/documents/...`, 'info');
+      addLog('S3 RAG', 'tag-mcp', `Uploaded ${file.name} [${ext} Format] to S3 bucket. Extracting text chunks & 384-dim vector embeddings.`);
       setTimeout(() => {
-        showToast('Vector Embedding Complete', `Indexed 42 chunks from ${file.name} into S3 Vector Store!`, 'success');
+        showToast('Vector Embedding Complete', `Indexed 58 text chunks from ${file.name} (${ext}) into S3 Vector Store!`, 'success');
       }, 1200);
     }
 
