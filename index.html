@@ -1361,46 +1361,38 @@
 
       <!-- TAB 3: INTERACTIVE JUPYTER LAB & ML STUDIO -->
       <div class="tab-pane" id="pane-jupyter">
-        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">📓 Interactive Jupyter Lab &amp; SageMaker ML Studio</h3>
-        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 14px;">
-          Write, edit, and execute Python Machine Learning code, PyTorch models, vector embeddings, and QLoRA fine-tuning scripts live in your browser.
-        </p>
-
-        <!-- NOTEBOOK TEMPLATE SELECTOR BAR -->
-        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
-          <label style="font-size: 11px; font-weight: 700; color: #38bdf8;">Select ML Notebook:</label>
-          <select id="notebook-select" class="form-input" style="flex: 1; padding: 6px 10px; font-size: 11px;" onchange="loadNotebookTemplate(this.value)">
-            <option value="bedrock_chat">01_Bedrock_Converse_API.ipynb (Agent Reasoning &amp; MCP Tools)</option>
-            <option value="rag_faiss">02_RAG_FAISS_Vector_Search.ipynb (384-dim Embedding &amp; Cosine Distance)</option>
-            <option value="qlora_finetune">03_QLoRA_Unsloth_FineTuning.ipynb (SFT Instruction Tuning &amp; Loss Curve)</option>
-            <option value="sagemaker_inference">04_SageMaker_Serverless_Inference.ipynb (Deploy Custom LLaMA 3 Endpoint)</option>
-          </select>
-        </div>
-
-        <!-- JUPYTER CODE CELL -->
-        <div style="background: #040711; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; margin-bottom: 12px;">
-          <div style="background: #0d1527; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);">
-            <span style="font-size: 11px; font-weight: 700; color: #a855f7; font-family: var(--font-mono);">In [1]: # Python 3.11 (SageMaker ML Kernel)</span>
-            <div style="display: flex; gap: 6px;">
-              <button class="btn-action" style="padding: 4px 10px; font-size: 11px; background: #10b981; color: #fff;" onclick="runJupyterCell()">▶ Run Code Cell</button>
-              <button class="btn-action" style="padding: 4px 10px; font-size: 11px; background: #21262d;" onclick="clearJupyterOutput()">🗑 Clear Output</button>
-            </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div>
+            <h3 style="font-size: 14px; font-weight: 700; color: var(--text-main); font-family: var(--font-heading);">📓 Interactive Jupyter Lab &amp; SageMaker ML Studio</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin: 2px 0 0 0;">
+              Full multi-cell Python ML notebook environment with cell controls (Add, Run, Move Up/Down, Delete).
+            </p>
           </div>
-          <textarea id="jupyter-code-input" class="form-input" style="width: 100%; height: 160px; font-family: var(--font-mono); font-size: 11px; border: none; border-radius: 0; background: #060a14; color: #e2e8f0; padding: 12px;" placeholder="Write Python ML code here..."># Sample Bedrock Converse API Execution
-import boto3
-
-bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
-response = bedrock.converse(
-    modelId='us.amazon.nova-micro-v1:0',
-    messages=[{'role': 'user', 'content': [{'text': 'Explain Model Context Protocol (MCP)'}]}]
-)
-print("Response:", response['output']['message']['content'][0]['text'])</textarea>
+          <span style="font-size: 10px; padding: 4px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-family: var(--font-mono); font-weight: 700;">Python 3.11 (SageMaker ML Kernel Active)</span>
         </div>
 
-        <!-- NOTEBOOK EXECUTION STDOUT OUTPUT CONSOLE -->
-        <div style="background: #020409; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
-          <div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; font-family: var(--font-mono);">Out [1]: (Execution Output Console)</div>
-          <pre id="jupyter-output-console" style="font-family: var(--font-mono); font-size: 10.5px; color: #34d399; margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow-y: auto;">Click '▶ Run Code Cell' to execute Python ML code, train models, or compute vector embeddings in real time...</pre>
+        <!-- NOTEBOOK TOP CONTROL TOOLBAR -->
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; background: #080c16; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);">
+          <div style="display: flex; gap: 6px; align-items: center; flex: 1; min-width: 260px;">
+            <label style="font-size: 11px; font-weight: 700; color: #38bdf8; font-family: var(--font-mono);">Notebook:</label>
+            <select id="notebook-select" class="form-input" style="flex: 1; padding: 6px 10px; font-size: 11px;" onchange="loadNotebookTemplate(this.value)">
+              <option value="bedrock_chat">01_Bedrock_Converse_API.ipynb (Agent Reasoning &amp; MCP Tools)</option>
+              <option value="rag_faiss">02_RAG_FAISS_Vector_Search.ipynb (384-dim Embedding &amp; Cosine Distance)</option>
+              <option value="qlora_finetune">03_QLoRA_Unsloth_FineTuning.ipynb (SFT Instruction Tuning &amp; Loss Curve)</option>
+              <option value="sagemaker_inference">04_SageMaker_Serverless_Inference.ipynb (Deploy Custom LLaMA 3 Endpoint)</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #22c55e; color: #fff;" onclick="addJupyterCell()">➕ Add Code Cell</button>
+            <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #3b82f6; color: #fff;" onclick="runAllJupyterCells()">▶ Run All Cells</button>
+            <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #21262d;" onclick="clearAllJupyterOutputs()">🗑 Clear All Outputs</button>
+            <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #0284c7; color: #fff;" onclick="exportJupyterNotebook()">💾 Export .ipynb</button>
+          </div>
+        </div>
+
+        <!-- DYNAMIC MULTI-CELL CONTAINER -->
+        <div id="notebook-cells-container" style="display: flex; flex-direction: column; gap: 14px;">
+          <!-- Cells injected and managed via renderNotebookCells() -->
         </div>
       </div>
 
@@ -1891,6 +1883,7 @@ def handler(event, context):
 
       const pane = document.getElementById('pane-' + tabId);
       if (pane) pane.classList.add('active');
+      if (tabId === 'jupyter') renderNotebookCells();
     }
 
     function switchSubTab(btnOrId, optionalSubId) {
@@ -2274,36 +2267,202 @@ def handler(event, context):
       triggerDeploy();
     }
 
-    const NOTEBOOK_TEMPLATES = {
-      bedrock_chat: `# 01_Bedrock_Converse_API.ipynb\nimport boto3\n\nbedrock = boto3.client('bedrock-runtime', region_name='us-east-1')\nresponse = bedrock.converse(\n    modelId='us.amazon.nova-micro-v1:0',\n    messages=[{'role': 'user', 'content': [{'text': 'Explain Model Context Protocol (MCP)'}]}]\n)\nprint("Response:", response['output']['message']['content'][0]['text'])`,
-      rag_faiss: `# 02_RAG_FAISS_Vector_Search.ipynb\nimport numpy as np\nfrom sentence_transformers import SentenceTransformer\n\nmodel = SentenceTransformer('all-MiniLM-L6-v2')\nembeddings = model.encode(["Prime upgrade refund policy: 100% eligible within 24 hours.", "DynamoDB TTL duration: 86400 seconds"])\nquery_emb = model.encode("What is the refund rule?")\nscores = np.dot(embeddings, query_emb) / (np.linalg.norm(embeddings, axis=1) * np.linalg.norm(query_emb))\n\nprint("Vector Embeddings Shape:", embeddings.shape)\nprint("Cosine Distance Scores:", scores)\nprint("Top Context Chunk Match:", "Chunk #0 (Score: 0.941)")`,
-      qlora_finetune: `# 03_QLoRA_Unsloth_FineTuning.ipynb\nimport torch\nfrom peft import LoraConfig, get_peft_model\n\nprint("Initializing QLoRA Hyperparameters: r=16, lora_alpha=32, target_modules=['q_proj', 'v_proj']")\nprint("Loading base 4-bit model weights (LLaMA 3.2 1B)...")\nprint("[Epoch 1/3] Loss: 2.1402 | GPU VRAM: 3.8GB / 16GB")\nprint("[Epoch 2/3] Loss: 1.0821 | Learning Rate: 1.8e-4")\nprint("[Epoch 3/3] Loss: 0.3104 | Final SFT Adapter Saved: adapter_model.bin")`,
-      sagemaker_inference: `# 04_SageMaker_Serverless_Inference.ipynb\nimport boto3\n\nsagemaker_runtime = boto3.client('sagemaker-runtime', region_name='us-east-1')\npayload = '{"inputs": "Summarize customer feedback ticket"}'\n\nres = sagemaker_runtime.invoke_endpoint(\n    EndpointName='llama3-serverless-endpoint',\n    ContentType='application/json',\n    Body=payload\n)\nprint("SageMaker Serverless Response:", res['Body'].read().decode('utf-8'))`
+    // MULTI-CELL JUPYTER NOTEBOOK STUDIO SYSTEM
+    let notebookCells = [
+      {
+        id: 1,
+        code: `# Cell 1: Environment Setup & Boto3 Bedrock Initialization\nimport boto3\nimport json\n\nprint("Initializing Amazon Bedrock Runtime Client in us-east-1...")\nbedrock = boto3.client('bedrock-runtime', region_name='us-east-1')\nprint("[SUCCESS] Bedrock client ready for Converse API Invocations.")`,
+        output: `Executing kernel Python 3.11 (SageMaker ML Kernel)...\n------------------------------------------------------------\nInitializing Amazon Bedrock Runtime Client in us-east-1...\n[SUCCESS] Bedrock client ready for Converse API Invocations.`
+      },
+      {
+        id: 2,
+        code: `# Cell 2: Execute Bedrock Converse API with Nova Micro Model\nuser_prompt = "Explain Model Context Protocol (MCP) and AWS Lambda integration"\n\nresponse = bedrock.converse(\n    modelId='us.amazon.nova-micro-v1:0',\n    messages=[{'role': 'user', 'content': [{'text': user_prompt}]}]\n)\nprint("Model Response:", response['output']['message']['content'][0]['text'])`,
+        output: `Model Response: Model Context Protocol (MCP) is an open standard that decouples LLMs from tools using JSON-RPC specifications (tools/list & tools/call).`
+      }
+    ];
+
+    function renderNotebookCells() {
+      const container = document.getElementById('notebook-cells-container');
+      if (!container) return;
+
+      container.innerHTML = notebookCells.map((cell, idx) => `
+        <div class="jupyter-cell" data-index="${idx}" style="background: #040711; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+          <!-- CELL HEADER TOOLBAR -->
+          <div style="background: #0d1527; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);">
+            <span style="font-size: 11px; font-weight: 700; color: #a855f7; font-family: var(--font-mono);">In [${idx + 1}]: # Python Code Cell</span>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <button class="btn-action" style="padding: 3px 8px; font-size: 10px; background: #10b981; color: #fff;" onclick="runSingleCell(${idx})">▶ Run Cell</button>
+              <button class="btn-action" style="padding: 3px 8px; font-size: 10px; background: #334155; color: #e2e8f0;" onclick="moveCell(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.4;"' : ''}>⬆ Up</button>
+              <button class="btn-action" style="padding: 3px 8px; font-size: 10px; background: #334155; color: #e2e8f0;" onclick="moveCell(${idx}, 1)" ${idx === notebookCells.length - 1 ? 'disabled style="opacity:0.4;"' : ''}>⬇ Down</button>
+              <button class="btn-action" style="padding: 3px 8px; font-size: 10px; background: #ef4444; color: #fff;" onclick="deleteCell(${idx})">🗑 Delete</button>
+            </div>
+          </div>
+
+          <!-- CELL CODE TEXTAREA -->
+          <textarea class="cell-code-input" style="width: 100%; height: 110px; font-family: var(--font-mono); font-size: 11px; border: none; border-radius: 0; background: #060a14; color: #38bdf8; padding: 12px; resize: vertical; line-height: 1.4;" placeholder="Write Python ML code here..." onchange="updateCellCode(${idx}, this.value)">${escapeHtml(cell.code)}</textarea>
+
+          <!-- CELL OUTPUT STDOUT CONSOLE -->
+          <div style="background: #020409; border-top: 1px solid var(--border-color); padding: 10px 12px;">
+            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 4px; font-family: var(--font-mono);">Out [${idx + 1}]: (STDOUT Output Console)</div>
+            <pre class="cell-output-console" style="font-family: var(--font-mono); font-size: 10.5px; color: #34d399; margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 140px; overflow-y: auto;">${escapeHtml(cell.output || "Cell output will appear here after execution...")}</pre>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addJupyterCell(codeStr = "", outputStr = "") {
+      const defaultCode = codeStr || `# Cell ${notebookCells.length + 1}: Python ML Snippet\nimport numpy as np\nprint("Executing matrix computation cell ${notebookCells.length + 1}...")`;
+      notebookCells.push({
+        id: Date.now(),
+        code: defaultCode,
+        output: outputStr || "Cell output will appear here after execution..."
+      });
+      renderNotebookCells();
+      showToast('Cell Added', `Added Code Cell [${notebookCells.length}] to notebook`, 'info');
+    }
+
+    function deleteCell(idx) {
+      if (notebookCells.length <= 1) {
+        showToast('Cell Delete Warning', 'Notebook must contain at least 1 cell!', 'warning');
+        return;
+      }
+      notebookCells.splice(idx, 1);
+      renderNotebookCells();
+      showToast('Cell Deleted', `Removed cell [${idx + 1}]`, 'info');
+    }
+
+    function moveCell(idx, dir) {
+      const targetIdx = idx + dir;
+      if (targetIdx < 0 || targetIdx >= notebookCells.length) return;
+      const temp = notebookCells[idx];
+      notebookCells[idx] = notebookCells[targetIdx];
+      notebookCells[targetIdx] = temp;
+      renderNotebookCells();
+    }
+
+    function updateCellCode(idx, val) {
+      if (notebookCells[idx]) notebookCells[idx].code = val;
+    }
+
+    function runSingleCell(idx) {
+      const textareas = document.querySelectorAll('.cell-code-input');
+      if (textareas[idx]) notebookCells[idx].code = textareas[idx].value;
+
+      const code = notebookCells[idx].code;
+      showToast('Kernel Execution', `Executing Python Cell [${idx + 1}]...`, 'info');
+
+      notebookCells[idx].output = `Executing kernel Python 3.11 (SageMaker ML Kernel)...\n------------------------------------------------------------\n` +
+        `>>> STDOUT Output [In ${idx + 1}]:\n` +
+        `[SUCCESS] Cell [${idx + 1}] executed in 0.28s.\n` +
+        `Return Value: OK (Exit Code: 0)`;
+
+      renderNotebookCells();
+      addCloudWatchLog('JUPYTER', 'tag-mcp', `Executed Cell [${idx + 1}] in Python 3.11 Kernel.`);
+    }
+
+    async function runAllJupyterCells() {
+      showToast('Executing Notebook', `Running all ${notebookCells.length} cells sequentially...`, 'info');
+      for (let i = 0; i < notebookCells.length; i++) {
+        runSingleCell(i);
+        await new Promise(r => setTimeout(r, 400));
+      }
+      showToast('Notebook Execution Complete', `All ${notebookCells.length} cells executed successfully!`, 'success');
+    }
+
+    function clearAllJupyterOutputs() {
+      notebookCells.forEach(cell => {
+        cell.output = "Cell output cleared.";
+      });
+      renderNotebookCells();
+      showToast('Outputs Cleared', 'Cleared outputs for all cells', 'info');
+    }
+
+    function exportJupyterNotebook() {
+      const ipynbJson = {
+        cells: notebookCells.map(c => ({
+          cell_type: "code",
+          execution_count: 1,
+          metadata: {},
+          outputs: [{ output_type: "stream", name: "stdout", text: c.output.split('\n') }],
+          source: c.code.split('\n')
+        })),
+        metadata: {
+          language_info: { name: "python", version: "3.11.0" },
+          orig_nbformat: 4
+        },
+        nbformat: 4,
+        nbformat_minor: 2
+      };
+
+      const blob = new Blob([JSON.stringify(ipynbJson, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Agentic_MCP_Studio_Notebook.ipynb";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Notebook Exported', 'Downloaded Agentic_MCP_Studio_Notebook.ipynb file!', 'success');
+    }
+
+    const NOTEBOOK_MULTI_CELL_TEMPLATES = {
+      bedrock_chat: [
+        {
+          code: `# Cell 1: Initialize Boto3 Bedrock Runtime Client\nimport boto3\n\nbedrock = boto3.client('bedrock-runtime', region_name='us-east-1')\nprint("Bedrock client initialized successfully.")`,
+          output: `Bedrock client initialized successfully.`
+        },
+        {
+          code: `# Cell 2: Invoke Bedrock Converse API with Agent System Prompt\nresponse = bedrock.converse(\n    modelId='us.amazon.nova-micro-v1:0',\n    messages=[{'role': 'user', 'content': [{'text': 'Explain Model Context Protocol (MCP)'}]}]\n)\nprint("Bedrock Response:", response['output']['message']['content'][0]['text'])`,
+          output: `Bedrock Response: Model Context Protocol (MCP) is an open standard that decouples LLMs from tools.`
+        }
+      ],
+      rag_faiss: [
+        {
+          code: `# Cell 1: Load Sentence Transformer Embedding Model\nfrom sentence_transformers import SentenceTransformer\n\nmodel = SentenceTransformer('all-MiniLM-L6-v2')\ndocs = ["Prime upgrade refund policy: 100% eligible within 24 hours.", "DynamoDB TTL duration: 86400 seconds"]\nembeddings = model.encode(docs)\nprint("Generated Embedding Vector Shape:", embeddings.shape)`,
+          output: `Generated Embedding Vector Shape: (2, 384)`
+        },
+        {
+          code: `# Cell 2: Compute Vector Cosine Similarity Score\nimport numpy as np\n\nquery_emb = model.encode("What is the refund rule?")\nscores = np.dot(embeddings, query_emb) / (np.linalg.norm(embeddings, axis=1) * np.linalg.norm(query_emb))\nprint("Cosine Distance Similarity Scores:", scores)\nprint("Top Match:", docs[np.argmax(scores)])`,
+          output: `Cosine Distance Similarity Scores: [0.9412034 0.1204121]\nTop Match: Prime upgrade refund policy: 100% eligible within 24 hours.`
+        }
+      ],
+      qlora_finetune: [
+        {
+          code: `# Cell 1: Configure PEFT QLoRA Parameters (4-Bit NormalFloat)\nfrom peft import LoraConfig\n\nconfig = LoraConfig(\n    r=16, lora_alpha=32,\n    target_modules=["q_proj", "v_proj"],\n    lora_dropout=0.05,\n    bias="none", task_type="CAUSAL_LM"\n)\nprint("QLoRA Adapter Configured: Trainable params 4.2M (0.3% of base model)")`,
+          output: `QLoRA Adapter Configured: Trainable params 4.2M (0.3% of base model)`
+        },
+        {
+          code: `# Cell 2: Run SFT Supervised Fine-Tuning Loop\nprint("Loading base 4-bit LLaMA-3.2-1B weights...")\nprint("[Epoch 1/3] Loss: 2.1402 | GPU VRAM: 3.8GB / 16GB")\nprint("[Epoch 2/3] Loss: 1.0821 | Learning Rate: 1.8e-4")\nprint("[Epoch 3/3] Loss: 0.3104 | Saved SFT Adapter: adapter_model.bin")`,
+          output: `[Epoch 1/3] Loss: 2.1402 | GPU VRAM: 3.8GB / 16GB\n[Epoch 2/3] Loss: 1.0821 | Learning Rate: 1.8e-4\n[Epoch 3/3] Loss: 0.3104 | Saved SFT Adapter: adapter_model.bin`
+        }
+      ],
+      sagemaker_inference: [
+        {
+          code: `# Cell 1: Prepare Payload for SageMaker Serverless Endpoint\nimport json\n\npayload = json.dumps({"inputs": "Summarize customer feedback ticket: Prime upgrade issue"})\nprint("SageMaker Payload Ready:", payload)`,
+          output: `SageMaker Payload Ready: {"inputs": "Summarize customer feedback ticket: Prime upgrade issue"}`
+        },
+        {
+          code: `# Cell 2: Invoke SageMaker Serverless Endpoint (Scale-to-0)\nimport boto3\n\nsagemaker_runtime = boto3.client('sagemaker-runtime', region_name='us-east-1')\nres = sagemaker_runtime.invoke_endpoint(\n    EndpointName='llama3-serverless-endpoint',\n    ContentType='application/json',\n    Body=payload\n)\nprint("SageMaker Serverless Response:", res['Body'].read().decode('utf-8'))`,
+          output: `SageMaker Serverless Response: [{"generated_text": "Customer ticket summarized: User requested clarification regarding Prime upgrade refund policy."}]`
+        }
+      ]
     };
 
     function loadNotebookTemplate(val) {
-      const codeInput = document.getElementById('jupyter-code-input');
-      if (codeInput && NOTEBOOK_TEMPLATES[val]) {
-        codeInput.value = NOTEBOOK_TEMPLATES[val];
-        showToast('Notebook Loaded', `Loaded template: ${val}.ipynb`, 'info');
+      if (NOTEBOOK_MULTI_CELL_TEMPLATES[val]) {
+        notebookCells = NOTEBOOK_MULTI_CELL_TEMPLATES[val].map((t, idx) => ({
+          id: Date.now() + idx,
+          code: t.code,
+          output: t.output
+        }));
+        renderNotebookCells();
+        showToast('Notebook Loaded', `Loaded template: ${val}.ipynb with ${notebookCells.length} cells!`, 'info');
       }
     }
 
-    function runJupyterCell() {
-      const code = document.getElementById('jupyter-code-input').value;
-      const out = document.getElementById('jupyter-output-console');
-      showToast('Kernel Execution', 'Executing Python ML notebook cell...', 'info');
-      out.innerText = `Executing kernel Python 3.11 (SageMaker ML Kernel)...\n------------------------------------------------------------\n` +
-        `>>> Input Code:\n${code.substring(0, 120)}...\n\n` +
-        `>>> STDOUT Execution Output:\n[SUCCESS] Kernel Execution Complete (0.34s)\n` +
-        `Array Output: [[0.0142, -0.0891, 0.4211, ... 384 dims]]\n` +
-        `Memory Used: 142 MB / 8000 MB | Status: OK`;
-      addLog('JUPYTER', 'tag-mcp', 'Executed Jupyter notebook cell in Python 3.11 ML Kernel.');
-    }
-
-    function clearJupyterOutput() {
-      document.getElementById('jupyter-output-console').innerText = "Console output cleared. Ready for next cell execution.";
-    }
+    // Initial render on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNotebookCells();
+    });
 
     function showToast(title, msg, type) {
       const container = document.getElementById('toast-container');
