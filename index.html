@@ -722,6 +722,10 @@
       z-index: 100;
     }
 
+    .modal-overlay.active {
+      display: flex !important;
+    }
+
     .modal-card {
       background: var(--bg-surface);
       border: 1px solid var(--border-color);
@@ -1002,11 +1006,11 @@
     <!-- RIGHT COL: INSPECTOR & ARCHITECTURE TABS -->
     <div class="inspector-col">
       <div class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('arch')">🗺️ Architecture</button>
-        <button class="tab-btn" onclick="switchTab('aiml')">🔬 AI/ML Studio &amp; Lab</button>
-        <button class="tab-btn" onclick="switchTab('jupyter')">📓 Jupyter Lab &amp; ML Studio</button>
-        <button class="tab-btn" onclick="switchTab('concepts')">💡 Concepts &amp; Services</button>
-        <button class="tab-btn" onclick="switchTab('code')">💻 Complete Code Inspector</button>
+        <button class="tab-btn active" onclick="switchTab(this, 'arch')">🗺️ Architecture</button>
+        <button class="tab-btn" onclick="switchTab(this, 'aiml')">🔬 AI/ML Studio &amp; Lab</button>
+        <button class="tab-btn" onclick="switchTab(this, 'jupyter')">📓 Jupyter Lab &amp; ML Studio</button>
+        <button class="tab-btn" onclick="switchTab(this, 'concepts')">💡 Concepts &amp; Services</button>
+        <button class="tab-btn" onclick="switchTab(this, 'code')">💻 Complete Code Inspector</button>
       </div>
 
       <!-- TAB 1: ARCHITECTURE SVG DIAGRAM -->
@@ -1871,22 +1875,53 @@ def handler(event, context):
       reader.readAsText(file);
     }
 
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    function switchTab(btnOrId, optionalId) {
+      let btn, tabId;
+      if (typeof btnOrId === 'string') {
+        tabId = btnOrId;
+      } else {
+        btn = btnOrId;
+        tabId = optionalId;
+      }
+
+      document.querySelectorAll('.tab-bar .tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      event.target.classList.add('active');
-      document.getElementById('pane-' + tabId).classList.add('active');
+
+      if (btn && btn.classList) {
+        btn.classList.add('active');
+      } else {
+        const match = document.querySelector(`.tab-btn[onclick*="'${tabId}'"]`);
+        if (match) match.classList.add('active');
+      }
+
+      const pane = document.getElementById('pane-' + tabId);
+      if (pane) pane.classList.add('active');
     }
 
-    function switchSubTab(subId) {
+    function switchSubTab(btnOrId, optionalSubId) {
+      let btn, subId;
+      if (typeof btnOrId === 'string') {
+        subId = btnOrId;
+      } else {
+        btn = btnOrId;
+        subId = optionalSubId;
+      }
+
       document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('code-cfn').style.display = 'none';
-      document.getElementById('code-agent').style.display = 'none';
-      document.getElementById('code-mcp').style.display = 'none';
-      document.getElementById('code-spec').style.display = 'none';
-      
-      event.target.classList.add('active');
-      document.getElementById('code-' + subId).style.display = 'block';
+      ['code-cfn', 'code-agent', 'code-mcp', 'code-spec'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+
+      if (btn && btn.classList) {
+        btn.classList.add('active');
+      } else {
+        const match = document.querySelector(`.sub-tab-btn[onclick*="'${subId}'"]`);
+        if (match) match.classList.add('active');
+      }
+
+      const subPane = document.getElementById('code-' + subId);
+      if (subPane) subPane.style.display = 'block';
     }
 
     function sendPreset(text) {
