@@ -679,6 +679,8 @@
       color: #38bdf8;
       overflow-x: auto;
       white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
       max-height: 480px;
     }
 
@@ -1439,18 +1441,17 @@ print("Response:", response['output']['message']['content'][0]['text'])</textare
         </div>
       </div>
 
-      <!-- TAB 3: COMPLETE FULL CODE INSPECTOR -->
+      <!-- TAB 5: COMPLETE FULL CODE INSPECTOR -->
       <div class="tab-pane" id="pane-code">
         <div class="sub-tab-bar">
-          <button class="sub-tab-btn active" onclick="switchSubTab('cfn')">CloudFormation YAML</button>
-          <button class="sub-tab-btn" onclick="switchSubTab('agent')">Agent Runtime Python</button>
-          <button class="sub-tab-btn" onclick="switchSubTab('mcp')">MCP Server Python</button>
-          <button class="sub-tab-btn" onclick="switchSubTab('spec')">MCP JSON Spec</button>
+          <button class="sub-tab-btn active" onclick="switchSubTab(this, 'cfn')">CloudFormation YAML</button>
+          <button class="sub-tab-btn" onclick="switchSubTab(this, 'agent')">Agent Runtime Python</button>
+          <button class="sub-tab-btn" onclick="switchSubTab(this, 'mcp')">MCP Server Python</button>
+          <button class="sub-tab-btn" onclick="switchSubTab(this, 'spec')">MCP JSON Spec</button>
         </div>
 
         <!-- FULL CLOUDFORMATION YAML -->
-        <div id="code-cfn" class="code-block">
-AWSTemplateFormatVersion: '2010-09-09'
+        <div id="code-cfn" class="code-block"><pre><code>AWSTemplateFormatVersion: '2010-09-09'
 Description: >
   1-Click Deploy: Enterprise Amazon Bedrock AI Agent with MCP Architecture.
 
@@ -1537,12 +1538,10 @@ Resources:
       Environment:
         Variables:
           MCP_SERVER_FUNCTION: !Ref McpToolServerFunction
-          BEDROCK_MODEL_ID: !Ref BedrockModelId
-        </div>
+          BEDROCK_MODEL_ID: !Ref BedrockModelId</code></pre></div>
 
         <!-- FULL AGENT RUNTIME PYTHON -->
-        <div id="code-agent" class="code-block" style="display:none;">
-import json
+        <div id="code-agent" class="code-block" style="display:none;"><pre><code>import json
 import os
 import boto3
 
@@ -1630,12 +1629,10 @@ def handler(event, context):
             "body": json.dumps({"response": final_text, "mcp_tools_executed": [tr['toolUse']['name'] for tr in tool_requests]})
         }
     else:
-        return {"statusCode": 200, "body": json.dumps({"response": output_message['content'][0]['text']})}
-        </div>
+        return {"statusCode": 200, "body": json.dumps({"response": output_message['content'][0]['text']})}</code></pre></div>
 
         <!-- FULL MCP TOOL SERVER PYTHON -->
-        <div id="code-mcp" class="code-block" style="display:none;">
-import json
+        <div id="code-mcp" class="code-block" style="display:none;"><pre><code>import json
 import os
 import boto3
 import time
@@ -1650,27 +1647,24 @@ def list_mcp_tools():
             "description": "Query session history from DynamoDB",
             "input_schema": {
                 "type": "object",
-                "properties": { "session_id": {"type": "string"} },
+                "properties": { "session_id": { "type": "string" } },
                 "required": ["session_id"]
             }
         },
         {
             "name": "save_session_data",
-            "description": "Store state into session memory",
+            "description": "Save session item to DynamoDB",
             "input_schema": {
                 "type": "object",
-                "properties": {
-                    "session_id": {"type": "string"},
-                    "content": {"type": "string"}
-                },
+                "properties": { "session_id": { "type": "string" }, "content": { "type": "string" } },
                 "required": ["session_id", "content"]
             }
         }
     ]
 
 def execute_mcp_tool(tool_name, arguments):
+    session_id = arguments.get("session_id", "session_101")
     table = dynamodb.Table(os.environ['TABLE_NAME'])
-    session_id = str(arguments.get("session_id", "session_101"))
 
     if tool_name == "query_database":
         res = table.query(
@@ -1705,12 +1699,10 @@ def handler(event, context):
         return {"statusCode": 200, "body": json.dumps({"tools": list_mcp_tools()})}
     elif action == 'tools/call':
         result = execute_mcp_tool(body.get('name'), body.get('arguments', {}))
-        return {"statusCode": 200, "body": json.dumps({"result": result})}
-        </div>
+        return {"statusCode": 200, "body": json.dumps({"result": result})}</code></pre></div>
 
         <!-- FULL MCP PROTOCOL SPEC JSON -->
-        <div id="code-spec" class="code-block" style="display:none;">
-// Model Context Protocol (MCP) JSON-RPC Protocol Specification
+        <div id="code-spec" class="code-block" style="display:none;"><pre><code>// Model Context Protocol (MCP) JSON-RPC Protocol Specification
 
 // 1. Tool Discovery Request (tools/list)
 {
