@@ -3149,7 +3149,7 @@ def handler(event, context):
       updateLogTickerLine(time, tag, message);
     }
 
-    async function triggerDeploy() {
+    async function triggerDeploy(suiteOptions) {
       expandCfConsole();
       const saved = localStorage.getItem(STORAGE_KEY);
       const creds = saved ? JSON.parse(saved) : {};
@@ -3161,7 +3161,8 @@ def handler(event, context):
       if (cfStatus) { cfStatus.innerText = 'CREATE_IN_PROGRESS'; cfStatus.style.color = '#f59e0b'; }
       if (cfFill) { cfFill.style.width = '15%'; cfFill.style.background = 'linear-gradient(90deg, #f59e0b, #3b82f6)'; }
 
-      addLog('DEPLOY', 'tag-gateway', 'Initiating CloudFormation stack deployment...');
+      const selectedMods = suiteOptions ? suiteOptions.selected_modules : [];
+      addLog('DEPLOY', 'tag-gateway', `Initiating CloudFormation deployment (${selectedMods.length > 0 ? selectedMods.length + '/5 Modules' : 'All Modules'})...`);
       addCloudWatchLog('CFN DEPLOY', 'tag-gateway', 'Boto3 CloudFormation SDK Client initialized. Validating template YAML...');
 
       if (cfLog) {
@@ -3192,7 +3193,8 @@ def handler(event, context):
           body: JSON.stringify({
             access_key: creds.accessKey,
             secret_key: creds.secretKey,
-            region: creds.region || 'us-east-1'
+            region: creds.region || 'us-east-1',
+            selected_modules: selectedMods
           })
         });
         const d = await res.json();
@@ -3204,7 +3206,7 @@ def handler(event, context):
         }
 
         addCloudWatchLog('SUCCESS', 'tag-gateway', 'CloudFormation stack CREATE_COMPLETE verified via Boto3 SDK.');
-        addLog('CFN SUCCESS', 'tag-mcp', 'All 14 AWS resources active and verified.');
+        addLog('CFN SUCCESS', 'tag-mcp', 'All active AWS resources active and verified.');
         showToast('Deploy Complete', d.message || 'CloudFormation Stack CREATE_COMPLETE verified!', 'success');
       } catch (err) {
         if (cfStatus) { cfStatus.innerText = 'CREATE_FAILED'; cfStatus.style.color = '#ef4444'; }
@@ -3536,13 +3538,20 @@ def handler(event, context):
 
     function deploySelectedSuite() {
       closeSuiteModal();
-      const mAgent = document.getElementById('mod-agent').checked;
-      const mRag = document.getElementById('mod-rag').checked;
-      const mFine = document.getElementById('mod-finetune').checked;
-      const mSage = document.getElementById('mod-sagemaker').checked;
-      const mJup = document.getElementById('mod-jupyter').checked;
+      const mAgent = document.getElementById('mod-agent')?.checked ?? true;
+      const mRag = document.getElementById('mod-rag')?.checked ?? true;
+      const mFine = document.getElementById('mod-finetune')?.checked ?? false;
+      const mSage = document.getElementById('mod-sagemaker')?.checked ?? false;
+      const mJup = document.getElementById('mod-jupyter')?.checked ?? false;
 
-      const count = [mAgent, mRag, mFine, mSage, mJup].filter(Boolean).length;
+      const activeMods = [];
+      if (mAgent) activeMods.push('Module 1: Bedrock Agentic Core');
+      if (mRag) activeMods.push('Module 2: Serverless RAG Knowledge Base');
+      if (mFine) activeMods.push('Module 3: QLoRA Fine-Tuning');
+      if (mSage) activeMods.push('Module 4: SageMaker Serverless Inference');
+      if (mJup) activeMods.push('Module 5: Jupyter Lab Notebooks');
+
+      const count = activeMods.length;
       const btn = document.getElementById('btn-main-deploy');
       if (btn) btn.innerText = `🚀 Deploy Suite (${count}/5 Modules)`;
 
@@ -3550,7 +3559,7 @@ def handler(event, context):
       if (stackLabel) stackLabel.innerText = `BedrockMcpAgentStack (${count} Modules Active)`;
 
       showToast('Suite Deployment Triggered', `Deploying ${count} CloudFormation module stacks via Boto3 SDK...`, 'info');
-      addLog('DEPLOY SUITE', 'tag-gateway', `CloudFormation Suite deploy started. Active: Agent[${mAgent}], RAG[${mRag}], FineTune[${mFine}], SageMaker[${mSage}], Jupyter[${mJup}].`);
+      addLog('DEPLOY SUITE', 'tag-gateway', `CloudFormation Suite deploy started. Active (${count}/5): ${activeMods.join(', ')}`);
 
       if (mRag) switchArchDiagram('m2');
       else if (mFine) switchArchDiagram('m3');
@@ -3559,7 +3568,9 @@ def handler(event, context):
       else switchArchDiagram('m1');
 
       expandCfConsole();
-      triggerDeploy();
+      triggerDeploy({
+        selected_modules: activeMods
+      });
     }
 
     // MULTI-CELL JUPYTER NOTEBOOK STUDIO SYSTEM

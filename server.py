@@ -1,6 +1,9 @@
 from wsgiref.simple_server import make_server
 import json
 import os
+import re
+import base64
+import io
 import boto3
 from botocore.exceptions import ClientError
 
@@ -301,6 +304,9 @@ def handle_deploy(payload):
     secret_key = payload.get('secret_key')
     region = payload.get('region', 'us-east-1')
     model_id = payload.get('model_id', 'us.amazon.nova-micro-v1:0')
+    selected_modules = payload.get('selected_modules', [])
+
+    module_desc = f"Selected Suite Modules: {', '.join(selected_modules)}" if selected_modules else "All 5 Suite Modules Active"
 
     try:
         dir_path = os.path.dirname(os.path.abspath(__file__))
@@ -321,6 +327,8 @@ def handle_deploy(payload):
             stack_exists = True
         except ClientError:
             stack_exists = False
+
+        print(f"[CFN_DEPLOY] Stack deploy started for {STACK_NAME} ({module_desc})", flush=True)
 
         if stack_exists:
             res = cfn.update_stack(
@@ -677,30 +685,45 @@ def extract_clean_text_from_file(filename, content_str, file_b64=None):
                 except Exception as xlsx_err:
                     print(f"[XLSX_ERR] {str(xlsx_err)}", flush=True)
 
-            # D. PDF DOCUMENTS (.pdf)
+            # D. PDF DOCUMENTS (.pdf) using pypdf 6.9.1
             elif ext == 'pdf':
                 try:
-                    import zlib
-                    stream_matches = re.findall(rb'stream[\r\n]+(.*?)[\r\n]+endstream', raw_bytes, re.DOTALL)
-                    for sm in stream_matches:
-                        try:
-                            decomp = zlib.decompress(sm)
-                            text_parts = re.findall(r'\((.*?)\)|\[(.*?)\]', decomp.decode('latin1', errors='ignore'))
-                            for tp in text_parts:
-                                t = (tp[0] or tp[1]).strip()
-                                if len(t) > 2 and not t.startswith('/'):
-                                    clean_lines.append(t)
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
+                    import pypdf, io
+                    reader = pypdf.PdfReader(io.BytesIO(raw_bytes))
+                    for page in reader.pages:
+                        t = page.extract_text()
+                        if t and len(t.strip()) > 0:
+                            for l in t.split('\n'):
+                                l_str = l.strip()
+                                if len(l_str) > 0:
+                                    clean_lines.append(l_str)
+                    print(f"[PYPDF_SUCCESS] Extracted {len(clean_lines)} lines via pypdf from {filename}!", flush=True)
+                except Exception as pypdf_err:
+                    print(f"[PYPDF_WARN] {str(pypdf_err)}", flush=True)
 
-                # Stream string regex extraction
-                matches = re.findall(rb'[A-Za-z0-9\s.,?!:;\'"()\-_]{3,}', raw_bytes)
-                extracted_strings = [m.decode('utf-8', errors='ignore').strip() for m in matches]
-                for s in extracted_strings:
-                    if len(s) > 3 and not any(k in s.lower() for k in ['/type', '/font', '/filter', '/length', 'endstream', 'endobj', '%pdf', 'mediabox', 'fontdescriptor', 'catalog']):
-                        clean_lines.append(s)
+                if not clean_lines:
+                    try:
+                        import zlib
+                        stream_matches = re.findall(rb'stream[\r\n]+(.*?)[\r\n]+endstream', raw_bytes, re.DOTALL)
+                        for sm in stream_matches:
+                            try:
+                                decomp = zlib.decompress(sm)
+                                text_parts = re.findall(r'\((.*?)\)|\[(.*?)\]', decomp.decode('latin1', errors='ignore'))
+                                for tp in text_parts:
+                                    val = (tp[0] or tp[1]).strip()
+                                    if len(val) > 2 and not val.startswith('/'):
+                                        clean_lines.append(val)
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+
+                if not clean_lines:
+                    matches = re.findall(rb'[A-Za-z0-9\s.,?!:;\'"()\-_]{3,}', raw_bytes)
+                    extracted_strings = [m.decode('utf-8', errors='ignore').strip() for m in matches]
+                    for s in extracted_strings:
+                        if len(s) > 3 and not any(k in s.lower() for k in ['/type', '/font', '/filter', '/length', 'endstream', 'endobj', '%pdf', 'mediabox', 'fontdescriptor', 'catalog']):
+                            clean_lines.append(s)
 
             # E. TXT / JSON / CSV / MD / LOG Fallback
             else:
