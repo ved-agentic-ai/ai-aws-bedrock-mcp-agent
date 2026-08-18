@@ -2338,6 +2338,90 @@ Click 'Trigger Continuous Retraining Pipeline' to execute end-to-end MLOps DAG w
             • <strong>Decoupled Security:</strong> The LLM never sees raw AWS credentials, IAM keys, or table names. It passes standardized JSON-RPC payloads through isolated Lambda sandboxes.
           </div>
         </div>
+
+        <!-- INTERACTIVE LIVE ANIMATION SIMULATOR CARD -->
+        <div class="card" style="border: 1px solid #10b981; background: #060e1a; margin-top: 14px; padding: 16px; border-radius: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 13px; font-weight: 700; color: #10b981; display: flex; align-items: center; gap: 6px; font-family: var(--font-heading);">
+              ⚡ Interactive Live Simulation: Normal DB Query vs. MCP Tool Agent Flow
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-action" style="padding: 4px 10px; font-size: 10.5px; background: #10b981; color: #fff; font-weight: 700; border-radius: 4px;" onclick="runMcpAnimationSimulation()">
+                ▶ Run Live Animation
+              </button>
+              <button class="btn-action" style="padding: 4px 8px; font-size: 10.5px; background: #1e293b; color: #94a3b8; border-radius: 4px;" onclick="resetMcpAnimationSimulation()">
+                ⟳ Reset
+              </button>
+            </div>
+          </div>
+
+          <p style="font-size: 10.5px; color: #94a3b8; margin-bottom: 14px; line-height: 1.4;">
+            Watch how the prompt <em>"I bought Prime for session_101"</em> is processed differently in real-time between a static hardcoded app vs. an autonomous MCP AI Agent!
+          </p>
+
+          <!-- DUAL FLOW COMPARISON CONTAINER -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+
+            <!-- LEFT FLOW: NORMAL HARDCODED DB QUERY -->
+            <div style="background: #080b14; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="font-size: 11px; font-weight: 700; color: #ef4444; text-align: center; border-bottom: 1px solid rgba(239, 68, 68, 0.2); padding-bottom: 4px;">
+                🔴 Normal DB Query Way (Hardcoded if/else)
+              </div>
+
+              <div class="sim-step" id="sim-normal-1" style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 10px; color: #94a3b8; transition: all 0.3s ease;">
+                <strong style="color: #cbd5e1;">Step 1: Input Received</strong><br>
+                Prompt: <em>"I bought Prime for session_101"</em>
+              </div>
+
+              <div class="sim-step" id="sim-normal-2" style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 10px; color: #94a3b8; transition: all 0.3s ease;">
+                <strong style="color: #cbd5e1;">Step 2: Hardcoded String Matching</strong><br>
+                <code>if "save" in prompt: boto3.put_item()</code>
+              </div>
+
+              <div class="sim-step" id="sim-normal-3" style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 10px; color: #94a3b8; transition: all 0.3s ease;">
+                <strong style="color: #ef4444;">Step 3: Condition Evaluation</strong><br>
+                ❌ <strong>FALSE</strong> (User said "bought", not "save"!)
+              </div>
+
+              <div class="sim-step" id="sim-normal-4" style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 10px; color: #94a3b8; transition: all 0.3s ease;">
+                <strong style="color: #ef4444;">Step 4: Output Status</strong><br>
+                🛑 <strong>FAILED</strong> — Nothing written to DynamoDB!
+              </div>
+            </div>
+
+            <!-- RIGHT FLOW: MCP AUTONOMOUS AGENT FLOW -->
+            <div style="background: #080b14; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <div style="font-size: 11px; font-weight: 700; color: #10b981; text-align: center; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 4px;">
+                🟢 MCP Tool Agent Way (Autonomous Bedrock)
+              </div>
+
+              <div class="sim-step" id="sim-mcp-1" style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 10px; color: #94a3b8; transition: all 0.3s ease;">
+                <strong style="color: #38bdf8;">Step 1: Natural Language Understanding</strong><br>
+                Bedrock reads intent: <em>Purchase transaction to store</em>
+              </div>
+
+              <div class="sim-step" id="sim-mcp-2" style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 10px; color: #94a3b8; transition: all 0.3s ease;">
+                <strong style="color: #38bdf8;">Step 2: MCP Tool Lookup (tools/list)</strong><br>
+                Matches schema: <code>save_session_data</code>
+              </div>
+
+              <div class="sim-step" id="sim-mcp-3" style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 10px; color: #94a3b8; transition: all 0.3s ease;">
+                <strong style="color: #a855f7;">Step 3: Construct JSON-RPC Payload</strong><br>
+                <code>{"session_id":"session_101","summary":"Bought Prime"}</code>
+              </div>
+
+              <div class="sim-step" id="sim-mcp-4" style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; font-size: 10px; color: #94a3b8; transition: all 0.3s ease;">
+                <strong style="color: #34d399;">Step 4: Execute &amp; Persist</strong><br>
+                ⚡ <strong>SUCCESS</strong> — Dynamically saved to DynamoDB!
+              </div>
+            </div>
+
+          </div>
+
+          <div id="sim-status-banner" style="margin-top: 12px; padding: 8px 12px; border-radius: 6px; background: #0b1120; border: 1px solid var(--border-color); font-size: 10.5px; font-family: var(--font-mono); color: #38bdf8; text-align: center;">
+            💡 Click "▶ Run Live Animation" to watch the interactive flow step-by-step!
+          </div>
+        </div>
       </div>
 
       <!-- TAB 5: COMPLETE FULL CODE INSPECTOR -->
@@ -3281,6 +3365,104 @@ def handler(event, context):
         d.filename.toLowerCase().includes(q) || (d.sample_text && d.sample_text.toLowerCase().includes(q))
       );
       renderS3DocViewerList(filtered);
+    }
+
+    let simAnimationTimer = null;
+
+    function resetMcpAnimationSimulation() {
+      if (simAnimationTimer) clearInterval(simAnimationTimer);
+      
+      for (let i = 1; i <= 4; i++) {
+        const elNorm = document.getElementById('sim-normal-' + i);
+        const elMcp = document.getElementById('sim-mcp-' + i);
+        if (elNorm) {
+          elNorm.style.background = '#0d1322';
+          elNorm.style.borderColor = 'var(--border-color)';
+          elNorm.style.boxShadow = 'none';
+          elNorm.style.transform = 'none';
+        }
+        if (elMcp) {
+          elMcp.style.background = '#0d1322';
+          elMcp.style.borderColor = 'var(--border-color)';
+          elMcp.style.boxShadow = 'none';
+          elMcp.style.transform = 'none';
+        }
+      }
+
+      const banner = document.getElementById('sim-status-banner');
+      if (banner) {
+        banner.style.color = '#38bdf8';
+        banner.style.borderColor = 'var(--border-color)';
+        banner.innerText = '💡 Click "▶ Run Live Animation" to watch the interactive flow step-by-step!';
+      }
+    }
+
+    function runMcpAnimationSimulation() {
+      resetMcpAnimationSimulation();
+      
+      const banner = document.getElementById('sim-status-banner');
+      const steps = [
+        {
+          step: 1,
+          banner: '⚡ [STEP 1/4] User sends prompt: "I bought Prime for session_101"',
+          normHighlight: { bg: '#1c0f14', border: '#ef4444', glow: '0 0 12px rgba(239,68,68,0.5)' },
+          mcpHighlight: { bg: '#061718', border: '#38bdf8', glow: '0 0 12px rgba(56,189,248,0.5)' }
+        },
+        {
+          step: 2,
+          banner: '⚡ [STEP 2/4] Normal code checks hardcoded string vs. Bedrock checks MCP schema',
+          normHighlight: { bg: '#250f14', border: '#ef4444', glow: '0 0 12px rgba(239,68,68,0.5)' },
+          mcpHighlight: { bg: '#0b1626', border: '#38bdf8', glow: '0 0 12px rgba(56,189,248,0.5)' }
+        },
+        {
+          step: 3,
+          banner: '⚡ [STEP 3/4] Hardcoded if-condition FAILS ❌ vs. Bedrock constructs JSON-RPC tool call 🎯',
+          normHighlight: { bg: '#3b0f14', border: '#ef4444', glow: '0 0 16px rgba(239,68,68,0.7)' },
+          mcpHighlight: { bg: '#1a0b26', border: '#a855f7', glow: '0 0 16px rgba(168,85,247,0.7)' }
+        },
+        {
+          step: 4,
+          banner: '🎉 [STEP 4/4] Normal flow FAILED (0 data saved) vs. MCP Tool Lambda SAVED to DynamoDB! 🚀',
+          normHighlight: { bg: '#450f14', border: '#ef4444', glow: '0 0 20px rgba(239,68,68,0.9)' },
+          mcpHighlight: { bg: '#062016', border: '#10b981', glow: '0 0 20px rgba(16,185,129,0.9)' }
+        }
+      ];
+
+      let currentIdx = 0;
+      
+      simAnimationTimer = setInterval(() => {
+        if (currentIdx >= steps.length) {
+          clearInterval(simAnimationTimer);
+          if (banner) {
+            banner.style.color = '#10b981';
+            banner.style.borderColor = '#10b981';
+            banner.innerText = '✅ Simulation Complete! MCP Autonomous Tool Selection won over static hardcoding!';
+          }
+          return;
+        }
+
+        const item = steps[currentIdx];
+        if (banner) banner.innerText = item.banner;
+
+        const normEl = document.getElementById('sim-normal-' + item.step);
+        const mcpEl = document.getElementById('sim-mcp-' + item.step);
+
+        if (normEl) {
+          normEl.style.background = item.normHighlight.bg;
+          normEl.style.borderColor = item.normHighlight.border;
+          normEl.style.boxShadow = item.normHighlight.glow;
+          normEl.style.transform = 'scale(1.02)';
+        }
+
+        if (mcpEl) {
+          mcpEl.style.background = item.mcpHighlight.bg;
+          mcpEl.style.borderColor = item.mcpHighlight.border;
+          mcpEl.style.boxShadow = item.mcpHighlight.glow;
+          mcpEl.style.transform = 'scale(1.02)';
+        }
+
+        currentIdx++;
+      }, 1200);
     }
 
     window.addEventListener('DOMContentLoaded', () => {
