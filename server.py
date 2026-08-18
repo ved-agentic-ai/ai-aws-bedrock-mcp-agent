@@ -335,10 +335,9 @@ def handle_deploy(payload):
             template_body = f.read()
 
         # Dynamically substitute CloudFormation Description header to display exact selected modules in AWS Console
-        if selected_modules:
-            formatted_mods = [MODULE_DESCRIPTIONS.get(m, m) for m in selected_modules]
-            clean_desc = f"AWS CloudFormation Suite - Active Modules: {', '.join(formatted_mods)}"
-            template_body = re.sub(r"^Description:\s*>.*?(?=\n\n|\nParameters:)", f"Description: '{clean_desc}'\n", template_body, flags=re.DOTALL | re.MULTILINE)
+        formatted_mods = [MODULE_DESCRIPTIONS.get(m, m) for m in selected_modules] if selected_modules else []
+        clean_desc = f"AWS CloudFormation Suite - Active Modules: {', '.join(formatted_mods)}" if selected_modules else "All Suite Modules"
+        template_body = re.sub(r"^Description:\s*>.*?(?=\n\n|\nParameters:)", f"Description: '{clean_desc}'\n", template_body, flags=re.DOTALL | re.MULTILINE)
 
         if access_key and secret_key:
             cfn = boto3.client('cloudformation', region_name=region,
@@ -354,7 +353,7 @@ def handle_deploy(payload):
         except ClientError:
             stack_exists = False
 
-        print(f"[CFN_DEPLOY] Stack deploy started for {STACK_NAME} ({module_desc})", flush=True)
+        print(f"[CFN_DEPLOY] Stack deploy started for {STACK_NAME} ({clean_desc})", flush=True)
 
         if stack_exists:
             res = cfn.update_stack(
