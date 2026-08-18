@@ -864,14 +864,14 @@
       <button class="btn-action btn-toggle" onclick="toggleSimMode()">
         <span id="sim-icon">🌐</span> <span id="sim-text">Live AWS Mode</span>
       </button>
-      <button class="btn-action" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: #c084fc;" onclick="openSuiteModal()">
+      <button class="btn-action" id="btn-suite-modal" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: #c084fc;" onclick="openSuiteModal()">
         🎯 CloudFormation Suite Modules
       </button>
       <button class="btn-action" onclick="openAwsModal()">
         ⚙️ AWS Config
       </button>
-      <button class="btn-action btn-deploy" onclick="triggerDeploy()">
-        🚀 Live AWS Deploy
+      <button class="btn-action btn-deploy" id="btn-main-deploy" onclick="triggerDeploy()">
+        🚀 Live AWS Deploy (Core)
       </button>
       <button class="btn-action btn-teardown" onclick="triggerTeardown()">
         🔥 Stack Teardown
@@ -886,22 +886,29 @@
     <div class="chat-col">
       <!-- SCREENSHOT EXACT MATCH TOP DASHBOARD -->
       <div class="dashboard-top-panel">
-        <!-- CF BOTO3 CONTROLLER CARD -->
-        <div class="cf-controller-box">
-          <div class="cf-top-row">
-            <div class="cf-title">
-              ⚙️ AWS CloudFormation Real Boto3 SDK Controller
-              <span class="cf-stack-name">BedrockMcpAgentStack</span>
+        <!-- CF BOTO3 CONTROLLER CARD (COLLAPSIBLE BY DEFAULT) -->
+        <div class="cf-controller-box" id="cf-controller-box">
+          <div class="cf-top-row" onclick="toggleCfConsole()" style="cursor: pointer; user-select: none;">
+            <div class="cf-title" style="display: flex; align-items: center; gap: 8px;">
+              <span>⚙️ AWS CloudFormation Controller</span>
+              <span class="cf-stack-name" id="cf-active-stack-label">BedrockMcpAgentStack</span>
             </div>
-            <div class="cf-status">CREATE_COMPLETE</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="cf-status">CREATE_COMPLETE</div>
+              <span id="cf-toggle-arrow" style="font-size: 10px; color: #38bdf8; font-weight: 700; background: #0f172a; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">▼ Expand Console</span>
+            </div>
           </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill"></div>
-          </div>
-          <div class="cf-log-line">
-            <span class="cf-log-time">16:00:16</span>
-            <span class="cf-log-success">[SUCCESS]</span>
-            CloudFormation stack CREATE_COMPLETE verified. All 14 AWS resources active.
+
+          <!-- COLLAPSIBLE BODY CONSOLE -->
+          <div id="cf-console-body" style="display: none; margin-top: 10px;">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill"></div>
+            </div>
+            <div class="cf-log-line">
+              <span class="cf-log-time">16:00:16</span>
+              <span class="cf-log-success">[SUCCESS]</span>
+              CloudFormation stack CREATE_COMPLETE verified. All 14 AWS resources active.
+            </div>
           </div>
         </div>
 
@@ -1063,37 +1070,52 @@
 
       <!-- TAB 1: ARCHITECTURE SVG DIAGRAM -->
       <div class="tab-pane active" id="pane-arch">
-        <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">Live AWS Agentic Architecture</h3>
-        <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px;">
-          End-to-end event-driven architecture decoupling LLM reasoning (Bedrock) from tool computation via Model Context Protocol (MCP).
-        </p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div>
+            <h3 style="font-size: 14px; font-weight: 700; color: var(--text-main); font-family: var(--font-heading);">Modular AWS Architecture Blueprints</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin: 2px 0 0 0;">
+              Select any of the 5 CloudFormation ML modules below to view its dedicated AWS architecture diagram!
+            </p>
+          </div>
+        </div>
 
-        <!-- OFFICIAL AWS STYLE ARCHITECTURE DIAGRAM SVG -->
-        <svg viewBox="0 0 1000 620" style="width:100%; height:auto; background:#0d1117; border:1px solid var(--border-color); border-radius:10px; padding:6px;">
-          <defs>
-            <linearGradient id="awsBg" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#161b22"/>
-              <stop offset="100%" stop-color="#0d1117"/>
-            </linearGradient>
-            <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#FF9900"/><stop offset="100%" stop-color="#FF5500"/>
-            </linearGradient>
-            <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#EC4899"/><stop offset="100%" stop-color="#BE185D"/>
-            </linearGradient>
-            <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#38BDF8"/><stop offset="100%" stop-color="#0284C7"/>
-            </linearGradient>
-            <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#22D3EE"/><stop offset="100%" stop-color="#0891B2"/>
-            </linearGradient>
-            <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#A855F7"/><stop offset="100%" stop-color="#7E22CE"/>
-            </linearGradient>
-            <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#38BDF8"/>
-            </marker>
-          </defs>
+        <!-- 5 MODULE ARCHITECTURE SWITCHER BAR -->
+        <div class="sub-tab-bar" style="margin-bottom: 12px;">
+          <button class="sub-tab-btn active" id="btn-arch-m1" onclick="switchArchDiagram('m1')">🧠 Module 1: Agent &amp; MCP</button>
+          <button class="sub-tab-btn" id="btn-arch-m2" onclick="switchArchDiagram('m2')">📚 Module 2: Serverless RAG</button>
+          <button class="sub-tab-btn" id="btn-arch-m3" onclick="switchArchDiagram('m3')">🎯 Module 3: QLoRA Fine-Tune</button>
+          <button class="sub-tab-btn" id="btn-arch-m4" onclick="switchArchDiagram('m4')">🤖 Module 4: SageMaker Endpt</button>
+          <button class="sub-tab-btn" id="btn-arch-m5" onclick="switchArchDiagram('m5')">📓 Module 5: Jupyter Studio</button>
+        </div>
+
+        <!-- DIAGRAM CONTAINER M1 -->
+        <div id="arch-svg-m1">
+          <!-- OFFICIAL AWS STYLE ARCHITECTURE DIAGRAM SVG -->
+          <svg viewBox="0 0 1000 620" style="width:100%; height:auto; background:#0d1117; border:1px solid var(--border-color); border-radius:10px; padding:6px;">
+            <defs>
+              <linearGradient id="awsBg" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#161b22"/>
+                <stop offset="100%" stop-color="#0d1117"/>
+              </linearGradient>
+              <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FF9900"/><stop offset="100%" stop-color="#FF5500"/>
+              </linearGradient>
+              <linearGradient id="pinkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#EC4899"/><stop offset="100%" stop-color="#BE185D"/>
+              </linearGradient>
+              <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#38BDF8"/><stop offset="100%" stop-color="#0284C7"/>
+              </linearGradient>
+              <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#22D3EE"/><stop offset="100%" stop-color="#0891B2"/>
+              </linearGradient>
+              <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#A855F7"/><stop offset="100%" stop-color="#7E22CE"/>
+              </linearGradient>
+              <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#38BDF8"/>
+              </marker>
+            </defs>
 
           <!-- Background -->
           <rect width="1000" height="620" fill="url(#awsBg)" rx="12" stroke="#30363d" stroke-width="2"/>
@@ -1181,6 +1203,198 @@
           <path d="M 520 260 L 520 290" stroke="#EC4899" stroke-width="2.5" marker-end="url(#arrow)"/>
           <path d="M 570 345 L 640 345" stroke="#22D3EE" stroke-width="2.5" stroke-dasharray="5,5" marker-end="url(#arrow)"/>
           <path d="M 780 345 L 820 345" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#arrow)"/>
+        </svg>
+      </div>
+
+      <!-- DIAGRAM CONTAINER M2: SERVERLESS RAG KB -->
+      <div id="arch-svg-m2" style="display: none;">
+        <svg viewBox="0 0 1000 440" style="width:100%; height:auto; background:#0d1117; border:1px solid var(--border-color); border-radius:10px; padding:6px;">
+          <rect width="1000" height="440" fill="url(#awsBg)" rx="12" stroke="#30363d" stroke-width="2"/>
+          <rect x="30" y="25" width="940" height="65" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+          <text x="50" y="55" fill="#10B981" font-size="18" font-weight="800" letter-spacing="0.5">MODULE 2: SERVERLESS RAG VECTOR KNOWLEDGE BASE ARCHITECTURE</text>
+          <text x="50" y="75" fill="#8b949e" font-size="11" font-weight="500">Universal S3 Document Dropzone ➔ 384-Dim Vector Embeddings ➔ FAISS Cosine Distance Context Retriever</text>
+
+          <g transform="translate(50, 140)">
+            <rect width="160" height="180" rx="10" fill="#21262d" stroke="#10B981" stroke-width="2"/>
+            <text x="80" y="45" fill="#fff" font-size="28" text-anchor="middle">📁</text>
+            <text x="80" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Universal Doc</text>
+            <text x="80" y="105" fill="#10B981" font-size="11" font-weight="600" text-anchor="middle">PDF/Excel/PPTX/Word</text>
+            <text x="80" y="130" fill="#8b949e" font-size="10" text-anchor="middle">s3://knowledge-base</text>
+          </g>
+
+          <path d="M 210 230 L 280 230" stroke="#10B981" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(280, 140)">
+            <rect width="180" height="180" rx="10" fill="#21262d" stroke="#38BDF8" stroke-width="2"/>
+            <text x="90" y="45" fill="#fff" font-size="28" text-anchor="middle">🔤</text>
+            <text x="90" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Recursive Chunker</text>
+            <text x="90" y="105" fill="#38BDF8" font-size="11" font-weight="600" text-anchor="middle">Text Chunking Engine</text>
+            <text x="90" y="130" fill="#8b949e" font-size="10" text-anchor="middle">512 Tokens / Overlap 50</text>
+          </g>
+
+          <path d="M 460 230 L 530 230" stroke="#38BDF8" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(530, 140)">
+            <rect width="190" height="180" rx="10" fill="#21262d" stroke="#A855F7" stroke-width="2"/>
+            <text x="95" y="45" fill="#fff" font-size="28" text-anchor="middle">🔢</text>
+            <text x="95" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">MiniLM Embedder</text>
+            <text x="95" y="105" fill="#A855F7" font-size="11" font-weight="600" text-anchor="middle">384-Dim Vector Float32</text>
+            <text x="95" y="130" fill="#8b949e" font-size="10" text-anchor="middle">In-Memory / S3 Storage ($0.00)</text>
+          </g>
+
+          <path d="M 720 230 L 790 230" stroke="#A855F7" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(790, 140)">
+            <rect width="160" height="180" rx="10" fill="#21262d" stroke="#EC4899" stroke-width="2"/>
+            <text x="80" y="45" fill="#fff" font-size="28" text-anchor="middle">🧠</text>
+            <text x="80" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Bedrock Agent</text>
+            <text x="80" y="105" fill="#EC4899" font-size="11" font-weight="600" text-anchor="middle">Converse API Context</text>
+            <text x="80" y="130" fill="#8b949e" font-size="10" text-anchor="middle">Context Injected (&lt;5ms)</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- DIAGRAM CONTAINER M3: QLoRA FINE-TUNING -->
+      <div id="arch-svg-m3" style="display: none;">
+        <svg viewBox="0 0 1000 440" style="width:100%; height:auto; background:#0d1117; border:1px solid var(--border-color); border-radius:10px; padding:6px;">
+          <rect width="1000" height="440" fill="url(#awsBg)" rx="12" stroke="#30363d" stroke-width="2"/>
+          <rect x="30" y="25" width="940" height="65" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+          <text x="50" y="55" fill="#A855F7" font-size="18" font-weight="800" letter-spacing="0.5">MODULE 3: QLoRA FINE-TUNING &amp; SAGEMAKER SPOT GPU ARCHITECTURE</text>
+          <text x="50" y="75" fill="#8b949e" font-size="11" font-weight="500">Instruction Dataset S3 ➔ 4-Bit NormalFloat Base LLaMA ➔ PEFT Adapter Model Training ➔ Loss Visualizer</text>
+
+          <g transform="translate(60, 140)">
+            <rect width="170" height="180" rx="10" fill="#21262d" stroke="#A855F7" stroke-width="2"/>
+            <text x="85" y="45" fill="#fff" font-size="28" text-anchor="middle">📂</text>
+            <text x="85" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Dataset S3 Bucket</text>
+            <text x="85" y="105" fill="#A855F7" font-size="11" font-weight="600" text-anchor="middle">custom_dataset.jsonl</text>
+            <text x="85" y="130" fill="#8b949e" font-size="10" text-anchor="middle">s3://training-data</text>
+          </g>
+
+          <path d="M 230 230 L 300 230" stroke="#A855F7" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(300, 140)">
+            <rect width="190" height="180" rx="10" fill="#21262d" stroke="#FF9900" stroke-width="2"/>
+            <text x="95" y="45" fill="#fff" font-size="28" text-anchor="middle">🖥️</text>
+            <text x="95" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">SageMaker Spot GPU</text>
+            <text x="95" y="105" fill="#FF9900" font-size="11" font-weight="600" text-anchor="middle">g4dn.xlarge (70% Discount)</text>
+            <text x="95" y="130" fill="#8b949e" font-size="10" text-anchor="middle">$0.72 / Training Job</text>
+          </g>
+
+          <path d="M 490 230 L 560 230" stroke="#FF9900" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(560, 140)">
+            <rect width="180" height="180" rx="10" fill="#21262d" stroke="#10B981" stroke-width="2"/>
+            <text x="90" y="45" fill="#fff" font-size="28" text-anchor="middle">📦</text>
+            <text x="90" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">PEFT Adapter</text>
+            <text x="90" y="105" fill="#10B981" font-size="11" font-weight="600" text-anchor="middle">adapter_model.bin</text>
+            <text x="90" y="130" fill="#8b949e" font-size="10" text-anchor="middle">Size: 14.2 MB (r=16)</text>
+          </g>
+
+          <path d="M 740 230 L 810 230" stroke="#10B981" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(810, 140)">
+            <rect width="140" height="180" rx="10" fill="#21262d" stroke="#EC4899" stroke-width="2"/>
+            <text x="70" y="45" fill="#fff" font-size="28" text-anchor="middle">📊</text>
+            <text x="70" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Loss Visualizer</text>
+            <text x="70" y="105" fill="#EC4899" font-size="11" font-weight="600" text-anchor="middle">2.14 ➔ 0.31 Loss</text>
+            <text x="70" y="130" fill="#8b949e" font-size="10" text-anchor="middle">Before vs After View</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- DIAGRAM CONTAINER M4: SAGEMAKER SERVERLESS -->
+      <div id="arch-svg-m4" style="display: none;">
+        <svg viewBox="0 0 1000 440" style="width:100%; height:auto; background:#0d1117; border:1px solid var(--border-color); border-radius:10px; padding:6px;">
+          <rect width="1000" height="440" fill="url(#awsBg)" rx="12" stroke="#30363d" stroke-width="2"/>
+          <rect x="30" y="25" width="940" height="65" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+          <text x="50" y="55" fill="#EC4899" font-size="18" font-weight="800" letter-spacing="0.5">MODULE 4: AWS SAGEMAKER SERVERLESS INFERENCE ARCHITECTURE</text>
+          <text x="50" y="75" fill="#8b949e" font-size="11" font-weight="500">InvokeEndpoint API ➔ EndpointConfig ➔ Scale-to-0 Auto-scaler ➔ Custom Fine-Tuned LLaMA Model</text>
+
+          <g transform="translate(70, 140)">
+            <rect width="170" height="180" rx="10" fill="#21262d" stroke="#EC4899" stroke-width="2"/>
+            <text x="85" y="45" fill="#fff" font-size="28" text-anchor="middle">📡</text>
+            <text x="85" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">SageMaker Client</text>
+            <text x="85" y="105" fill="#EC4899" font-size="11" font-weight="600" text-anchor="middle">boto3.sagemaker-runtime</text>
+            <text x="85" y="130" fill="#8b949e" font-size="10" text-anchor="middle">InvokeEndpoint Payload</text>
+          </g>
+
+          <path d="M 240 230 L 310 230" stroke="#EC4899" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(310, 140)">
+            <rect width="190" height="180" rx="10" fill="#21262d" stroke="#22D3EE" stroke-width="2"/>
+            <text x="95" y="45" fill="#fff" font-size="28" text-anchor="middle">⚡</text>
+            <text x="95" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Scale-to-0 Autoscaler</text>
+            <text x="95" y="105" fill="#22D3EE" font-size="11" font-weight="600" text-anchor="middle">0 Instances when idle</text>
+            <text x="95" y="130" fill="#8b949e" font-size="10" text-anchor="middle">$1.00 / month cost</text>
+          </g>
+
+          <path d="M 500 230 L 570 230" stroke="#22D3EE" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(570, 140)">
+            <rect width="180" height="180" rx="10" fill="#21262d" stroke="#38BDF8" stroke-width="2"/>
+            <text x="90" y="45" fill="#fff" font-size="28" text-anchor="middle">🤖</text>
+            <text x="90" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Custom LLaMA 3</text>
+            <text x="90" y="105" fill="#38BDF8" font-size="11" font-weight="600" text-anchor="middle">Fine-Tuned Adapter Model</text>
+            <text x="90" y="130" fill="#8b949e" font-size="10" text-anchor="middle">Real-time Inference</text>
+          </g>
+
+          <path d="M 750 230 L 820 230" stroke="#38BDF8" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(820, 140)">
+            <rect width="130" height="180" rx="10" fill="#21262d" stroke="#10B981" stroke-width="2"/>
+            <text x="65" y="45" fill="#fff" font-size="28" text-anchor="middle">💬</text>
+            <text x="65" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Response</text>
+            <text x="65" y="105" fill="#10B981" font-size="11" font-weight="600" text-anchor="middle">JSON Stream</text>
+            <text x="65" y="130" fill="#8b949e" font-size="10" text-anchor="middle">200 OK</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- DIAGRAM CONTAINER M5: JUPYTER LAB STUDIO -->
+      <div id="arch-svg-m5" style="display: none;">
+        <svg viewBox="0 0 1000 440" style="width:100%; height:auto; background:#0d1117; border:1px solid var(--border-color); border-radius:10px; padding:6px;">
+          <rect width="1000" height="440" fill="url(#awsBg)" rx="12" stroke="#30363d" stroke-width="2"/>
+          <rect x="30" y="25" width="940" height="65" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+          <text x="50" y="55" fill="#F59E0B" font-size="18" font-weight="800" letter-spacing="0.5">MODULE 5: INTERACTIVE JUPYTER LAB &amp; SAGEMAKER STUDIO ARCHITECTURE</text>
+          <text x="50" y="75" fill="#8b949e" font-size="11" font-weight="500">Browser Multi-Cell UI ➔ SageMaker Notebook Instance ➔ Python 3.11 Kernel ➔ Boto3 ML Execution</text>
+
+          <g transform="translate(60, 140)">
+            <rect width="170" height="180" rx="10" fill="#21262d" stroke="#F59E0B" stroke-width="2"/>
+            <text x="85" y="45" fill="#fff" font-size="28" text-anchor="middle">💻</text>
+            <text x="85" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Browser Web UI</text>
+            <text x="85" y="105" fill="#F59E0B" font-size="11" font-weight="600" text-anchor="middle">Multi-Cell Code Editor</text>
+            <text x="85" y="130" fill="#8b949e" font-size="10" text-anchor="middle">Add / Run / Move Cells</text>
+          </g>
+
+          <path d="M 230 230 L 300 230" stroke="#F59E0B" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(300, 140)">
+            <rect width="190" height="180" rx="10" fill="#21262d" stroke="#38BDF8" stroke-width="2"/>
+            <text x="95" y="45" fill="#fff" font-size="28" text-anchor="middle">📓</text>
+            <text x="95" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Python 3.11 Kernel</text>
+            <text x="95" y="105" fill="#38BDF8" font-size="11" font-weight="600" text-anchor="middle">SageMaker ML Instance</text>
+            <text x="95" y="130" fill="#8b949e" font-size="10" text-anchor="middle">Live Execution Runtime</text>
+          </g>
+
+          <path d="M 490 230 L 560 230" stroke="#38BDF8" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(560, 140)">
+            <rect width="180" height="180" rx="10" fill="#21262d" stroke="#10B981" stroke-width="2"/>
+            <text x="90" y="45" fill="#fff" font-size="28" text-anchor="middle">🐍</text>
+            <text x="90" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Boto3 ML SDK</text>
+            <text x="90" y="105" fill="#10B981" font-size="11" font-weight="600" text-anchor="middle">Bedrock &amp; SageMaker SDK</text>
+            <text x="90" y="130" fill="#8b949e" font-size="10" text-anchor="middle">API Invocations</text>
+          </g>
+
+          <path d="M 740 230 L 810 230" stroke="#10B981" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(810, 140)">
+            <rect width="140" height="180" rx="10" fill="#21262d" stroke="#A855F7" stroke-width="2"/>
+            <text x="70" y="45" fill="#fff" font-size="28" text-anchor="middle">📄</text>
+            <text x="70" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Export .ipynb</text>
+            <text x="70" y="105" fill="#A855F7" font-size="11" font-weight="600" text-anchor="middle">JSON Notebook File</text>
+            <text x="70" y="130" fill="#8b949e" font-size="10" text-anchor="middle">1-Click Download</text>
+          </g>
         </svg>
       </div>
 
@@ -2214,6 +2428,99 @@ def handler(event, context):
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
+    function expandCfConsole() {
+      const body = document.getElementById('cf-console-body');
+      const arrow = document.getElementById('cf-toggle-arrow');
+      if (body) body.style.display = 'block';
+      if (arrow) arrow.innerText = '▲ Collapse Console';
+    }
+
+    function toggleCfConsole() {
+      const body = document.getElementById('cf-console-body');
+      const arrow = document.getElementById('cf-toggle-arrow');
+      if (body && body.style.display === 'block') {
+        body.style.display = 'none';
+        if (arrow) arrow.innerText = '▼ Expand Console';
+      } else {
+        expandCfConsole();
+      }
+    }
+
+    const MODULE_NODES_CONFIG = {
+      module1: [
+        { icon: '🌐', title: 'API Gateway', sub: 'HTTP Route & Auth', badge: '200 OK', id: 'gateway' },
+        { icon: '🧠', title: 'Agent Core', sub: 'Bedrock Converse API', badge: 'OK', id: 'agent' },
+        { icon: '🔌', title: 'MCP Client', sub: 'tools/list & call', badge: 'MATCH', id: 'mcp' },
+        { icon: '⚡', title: 'Tool Lambda', sub: 'Backend execution', badge: 'SUCCESS', id: 'lambda' },
+        { icon: '💾', title: 'DynamoDB', sub: 'Session memory', badge: 'PERSISTED', id: 'dynamo' }
+      ],
+      module2: [
+        { icon: '📁', title: 'S3 Dropzone', sub: 'Universal PDF/Excel', badge: 'INGESTED', id: 'gateway' },
+        { icon: '🔤', title: 'Chunker Engine', sub: 'Recursive Text Splitter', badge: 'CHUNKED', id: 'agent' },
+        { icon: '🔢', title: 'MiniLM Embedder', sub: '384-Dim Vector Generator', badge: 'EMBEDDED', id: 'mcp' },
+        { icon: '🎯', title: 'FAISS Retriever', sub: 'Cosine Distance Matcher', badge: '0.941 SIM', id: 'lambda' },
+        { icon: '💡', title: 'Bedrock Context', sub: 'Prompt Augmentation', badge: 'INJECTED', id: 'dynamo' }
+      ],
+      module3: [
+        { icon: '📂', title: 'S3 Training Data', sub: 'custom_dataset.jsonl', badge: 'UPLOADED', id: 'gateway' },
+        { icon: '🖥️', title: 'SageMaker Spot GPU', sub: 'g4dn.xlarge GPU Instance', badge: 'ACTIVE', id: 'agent' },
+        { icon: '⚙️', title: 'QLoRA Unsloth', sub: 'r=16, 4-Bit NormalFloat', badge: 'TRAINING', id: 'mcp' },
+        { icon: '📊', title: 'Loss Visualizer', sub: 'Epoch Loss 2.14 ➔ 0.31', badge: '0.31 LOSS', id: 'lambda' },
+        { icon: '📦', title: 'PEFT Adapter', sub: 'adapter_model.bin', badge: 'SAVED', id: 'dynamo' }
+      ],
+      module4: [
+        { icon: '📡', title: 'SageMaker API', sub: 'InvokeEndpoint Client', badge: 'READY', id: 'gateway' },
+        { icon: '🛠️', title: 'EndpointConfig', sub: 'Serverless Config Spec', badge: 'PROVISIONED', id: 'agent' },
+        { icon: '⚡', title: 'Scale-to-0', sub: 'Auto-Scaler (Scale to 0)', badge: 'SCALED 0', id: 'mcp' },
+        { icon: '🤖', title: 'LLaMA 3 Model', sub: 'Fine-Tuned Adapter Weights', badge: 'INVOKED', id: 'lambda' },
+        { icon: '💬', title: 'Model Response', sub: 'JSON Inference Payload', badge: '200 OK', id: 'dynamo' }
+      ],
+      module5: [
+        { icon: '💻', title: 'Browser App', sub: 'Interactive Web Studio', badge: 'CONNECTED', id: 'gateway' },
+        { icon: '📓', title: 'Jupyter Cell', sub: 'Python 3.11 Kernel', badge: 'ACTIVE', id: 'agent' },
+        { icon: '🐍', title: 'Boto3 ML SDK', sub: 'SageMaker / Bedrock SDK', badge: 'LOADED', id: 'mcp' },
+        { icon: '▶️', title: 'STDOUT Runner', sub: 'Kernel Cell Execution', badge: '0.34s OK', id: 'lambda' },
+        { icon: '📄', title: 'Export .ipynb', sub: 'JSON Notebook Spec', badge: 'EXPORTED', id: 'dynamo' }
+      ]
+    };
+
+    function updateActiveModuleNodes(modKey) {
+      const nodes = MODULE_NODES_CONFIG[modKey] || MODULE_NODES_CONFIG.module1;
+      const grid = document.querySelector('.nodes-grid');
+      if (!grid) return;
+
+      grid.innerHTML = nodes.map(n => `
+        <div class="node-card" id="node-${n.id}">
+          <div class="node-card-top">
+            <span class="node-card-icon">${n.icon}</span>
+            <span class="node-card-badge" id="st-${n.id}">${n.badge}</span>
+          </div>
+          <div>
+            <div class="node-card-title">${n.title}</div>
+            <div class="node-card-sub">${n.sub}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function switchArchDiagram(modKey) {
+      document.querySelectorAll('#pane-arch .sub-tab-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById('btn-arch-' + modKey);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      ['m1', 'm2', 'm3', 'm4', 'm5'].forEach(id => {
+        const svg = document.getElementById('arch-svg-' + id);
+        if (svg) svg.style.display = 'none';
+      });
+
+      const targetSvg = document.getElementById('arch-svg-' + modKey);
+      if (targetSvg) targetSvg.style.display = 'block';
+
+      const modMap = { m1: 'module1', m2: 'module2', m3: 'module3', m4: 'module4', m5: 'module5' };
+      updateActiveModuleNodes(modMap[modKey] || 'module1');
+      showToast('Architecture Switch', `Loaded AWS Architecture diagram & active component nodes for ${modKey.toUpperCase()}`, 'info');
+    }
+
     function setNodeState(node, state, label) {
       const el = document.getElementById('node-' + node);
       const st = document.getElementById('st-' + node);
@@ -2250,12 +2557,13 @@ def handler(event, context):
     }
 
     async function triggerDeploy() {
+      expandCfConsole();
       const saved = localStorage.getItem(STORAGE_KEY);
       const creds = saved ? JSON.parse(saved) : {};
       
       const cfStatus = document.querySelector('.cf-status');
       const cfFill = document.querySelector('.progress-bar-fill');
-      const cfLog = document.querySelector('.cf-log-line');
+      const cfLog = document.querySelector('#cf-console-body .cf-log-line');
 
       if (cfStatus) { cfStatus.innerText = 'CREATE_IN_PROGRESS'; cfStatus.style.color = '#f59e0b'; }
       if (cfFill) { cfFill.style.width = '15%'; cfFill.style.background = 'linear-gradient(90deg, #f59e0b, #3b82f6)'; }
@@ -2474,8 +2782,23 @@ def handler(event, context):
       const mSage = document.getElementById('mod-sagemaker').checked;
       const mJup = document.getElementById('mod-jupyter').checked;
 
-      showToast('Suite Deployment Triggered', 'Deploying CloudFormation module stack via real Boto3 SDK...', 'info');
-      addLog('DEPLOY SUITE', 'tag-gateway', `CloudFormation Suite deploy started. Selected: Agent[${mAgent}], RAG[${mRag}], FineTune[${mFine}], SageMaker[${mSage}], Jupyter[${mJup}].`);
+      const count = [mAgent, mRag, mFine, mSage, mJup].filter(Boolean).length;
+      const btn = document.getElementById('btn-main-deploy');
+      if (btn) btn.innerText = `🚀 Deploy Suite (${count}/5 Modules)`;
+
+      const stackLabel = document.getElementById('cf-active-stack-label');
+      if (stackLabel) stackLabel.innerText = `BedrockMcpAgentStack (${count} Modules Active)`;
+
+      showToast('Suite Deployment Triggered', `Deploying ${count} CloudFormation module stacks via Boto3 SDK...`, 'info');
+      addLog('DEPLOY SUITE', 'tag-gateway', `CloudFormation Suite deploy started. Active: Agent[${mAgent}], RAG[${mRag}], FineTune[${mFine}], SageMaker[${mSage}], Jupyter[${mJup}].`);
+
+      if (mRag) switchArchDiagram('m2');
+      else if (mFine) switchArchDiagram('m3');
+      else if (mSage) switchArchDiagram('m4');
+      else if (mJup) switchArchDiagram('m5');
+      else switchArchDiagram('m1');
+
+      expandCfConsole();
       triggerDeploy();
     }
 
