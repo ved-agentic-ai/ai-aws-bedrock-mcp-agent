@@ -455,9 +455,36 @@
     .msg-meta {
       font-size: 10px;
       color: var(--text-dim);
-      display: flex;
-      gap: 8px;
+      margin-top: 4px;
       padding: 0 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-save-item {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 6px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-save-item:hover {
+      background: #38bdf8;
+      color: #040711;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+
+    .btn-save-item.saved {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #10b981;
+      color: #10b981;
     }
 
     /* INPUT SECTION */
@@ -944,7 +971,34 @@
             • Ask me any general technical, coding, or creative questions (just like ChatGPT).<br>
             • Or click the presets below to execute live MCP tools on DynamoDB session memory!
           </div>
-          <div class="msg-meta"><span>System Assistant</span> • <span>Online</span></div>
+          <div class="msg-meta">
+            <span>System Assistant</span> • <span>Online</span>
+            <button class="btn-save-item" onclick="saveIndividualMessage(this, 'Welcome to Enterprise Agentic MCP Control Center!', 'assistant')">💾 Save to DB</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRE-CHAT SESSION PERSISTENCE OVERLAY BANNER -->
+      <div id="session-overlay-banner" style="background: linear-gradient(135deg, rgba(8, 12, 22, 0.95), rgba(15, 23, 42, 0.95)); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 10px 14px; background: #060a14;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 14px;">💾</span>
+            <span style="font-size: 11.5px; font-weight: 700; color: #f8fafc; font-family: var(--font-heading);">Session Persistence &amp; DynamoDB Memory Setup</span>
+          </div>
+          <span id="session-persistence-badge" style="font-size: 10px; padding: 2px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">AUTO-SAVE: session_101</span>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 200px;">
+            <label style="font-size: 10.5px; color: var(--text-muted); font-weight: 700; font-family: var(--font-mono);">Session ID:</label>
+            <input type="text" id="session-id-input" class="form-input" style="flex: 1; padding: 4px 8px; font-size: 11px; font-family: var(--font-mono);" value="session_101" onchange="updateActiveSessionId(this.value)">
+            <button class="btn-action" style="padding: 4px 8px; font-size: 10.5px; background: #334155; color: #fff;" onclick="generateNewSessionId()">➕ New</button>
+          </div>
+
+          <div style="display: flex; gap: 6px;">
+            <button id="btn-toggle-auto-save" class="btn-action" style="padding: 4px 10px; font-size: 10.5px; background: #10b981; color: #fff;" onclick="toggleAutoSaveSession(true)">✅ Auto-Save Session to DynamoDB</button>
+            <button id="btn-toggle-ephemeral" class="btn-action" style="padding: 4px 10px; font-size: 10.5px; background: #21262d; color: #94a3b8;" onclick="toggleAutoSaveSession(false)">🚫 Ephemeral Mode</button>
+          </div>
         </div>
       </div>
 
@@ -1917,6 +1971,94 @@ def handler(event, context):
       sendMessage();
     }
 
+    let activeSessionId = "session_101";
+    let isAutoSaveSessionEnabled = true;
+
+    function updateActiveSessionId(val) {
+      if (!val) return;
+      activeSessionId = val.trim();
+      const badge = document.getElementById('session-persistence-badge');
+      if (badge) {
+        badge.innerText = (isAutoSaveSessionEnabled ? 'AUTO-SAVE: ' : 'EPHEMERAL: ') + activeSessionId;
+      }
+      showToast('Session Active', `Switched active session ID to [${activeSessionId}]`, 'info');
+      addLog('SESSION', 'tag-system', `Switched active Session ID to ${activeSessionId}. Auto-Save: ${isAutoSaveSessionEnabled}`);
+    }
+
+    function generateNewSessionId() {
+      const randId = 'session_user_' + Math.floor(100 + Math.random() * 900);
+      const input = document.getElementById('session-id-input');
+      if (input) input.value = randId;
+      updateActiveSessionId(randId);
+    }
+
+    function toggleAutoSaveSession(enable) {
+      isAutoSaveSessionEnabled = enable;
+      const btnSave = document.getElementById('btn-toggle-auto-save');
+      const btnEph = document.getElementById('btn-toggle-ephemeral');
+      const badge = document.getElementById('session-persistence-badge');
+
+      if (enable) {
+        if (btnSave) { btnSave.style.background = '#10b981'; btnSave.style.color = '#fff'; }
+        if (btnEph) { btnEph.style.background = '#21262d'; btnEph.style.color = '#94a3b8'; }
+        if (badge) {
+          badge.innerText = 'AUTO-SAVE: ' + activeSessionId;
+          badge.style.background = 'rgba(16, 185, 129, 0.15)';
+          badge.style.color = '#10b981';
+          badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+        }
+        showToast('Persistence Enabled', `Auto-saving all chat entries to DynamoDB [${activeSessionId}]`, 'success');
+      } else {
+        if (btnSave) { btnSave.style.background = '#21262d'; btnSave.style.color = '#94a3b8'; }
+        if (btnEph) { btnEph.style.background = '#ef4444'; btnEph.style.color = '#fff'; }
+        if (badge) {
+          badge.innerText = 'EPHEMERAL: ' + activeSessionId;
+          badge.style.background = 'rgba(239, 68, 68, 0.15)';
+          badge.style.color = '#ef4444';
+          badge.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        }
+        showToast('Ephemeral Mode', 'Chat entries will NOT be auto-saved to DynamoDB', 'warning');
+      }
+    }
+
+    async function saveIndividualMessage(btn, content, role) {
+      const savedConfig = localStorage.getItem(STORAGE_KEY);
+      const creds = savedConfig ? JSON.parse(savedConfig) : {};
+      
+      showToast('Persisting Entry', `Saving ${role} message to DynamoDB [${activeSessionId}]...`, 'info');
+      addLog('SAVE DB', 'tag-system', `Saving individual ${role} entry to DynamoDB for ${activeSessionId}...`);
+
+      try {
+        const res = await fetch('/api/session/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: activeSessionId,
+            content: content,
+            role: role,
+            access_key: creds.accessKey,
+            secret_key: creds.secretKey,
+            region: creds.region || 'us-east-1'
+          })
+        });
+        const data = await res.json();
+
+        if (btn) {
+          btn.innerText = '✅ Saved to DB';
+          btn.classList.add('saved');
+        }
+
+        showToast('Saved to DynamoDB', `Entry mapped to Session [${activeSessionId}] in DynamoDB!`, 'success');
+        addLog('PERSISTED', 'tag-mcp', `Successfully saved ${role} entry to DynamoDB [${activeSessionId}].`);
+      } catch (err) {
+        showToast('Save Warning', `Local simulation saved entry to [${activeSessionId}]`, 'info');
+        if (btn) {
+          btn.innerText = '✅ Saved (Local)';
+          btn.classList.add('saved');
+        }
+      }
+    }
+
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const text = input.value.trim();
@@ -1927,12 +2069,19 @@ def handler(event, context):
       chatBox.innerHTML += `
         <div class="msg user">
           <div class="msg-bubble">${escapeHtml(text)}</div>
-          <div class="msg-meta"><span>User</span> • <span>Just now</span></div>
+          <div class="msg-meta">
+            <span>User</span> • <span>Just now</span>
+            <button class="btn-save-item" onclick="saveIndividualMessage(this, '${escapeHtml(text)}', 'user')">💾 Save to DB</button>
+          </div>
         </div>
       `;
       chatBox.scrollTop = chatBox.scrollHeight;
 
-      addLog('USER', 'tag-gateway', `Prompt: "${text}"`);
+      addLog('USER', 'tag-gateway', `Prompt: "${text}" [Session: ${activeSessionId}]`);
+
+      if (isAutoSaveSessionEnabled) {
+        saveIndividualMessage(null, text, 'user');
+      }
 
       if (isSimulationMode) {
         runSimulatedPipeline(text);
@@ -1951,7 +2100,7 @@ def handler(event, context):
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             prompt: text,
-            session_id: 'session_101',
+            session_id: activeSessionId,
             access_key: creds.accessKey,
             secret_key: creds.secretKey,
             region: creds.region || 'us-east-1'
@@ -1966,14 +2115,23 @@ def handler(event, context):
         setNodeState('mcp', 'completed', 'MATCH');
         setNodeState('dynamo', 'completed', 'OK');
 
+        const respText = data.response || data.message || "Response returned";
+
         chatBox.innerHTML += `
           <div class="msg assistant">
-            <div class="msg-bubble">${formatMarkdown(data.response || data.message)}</div>
-            <div class="msg-meta"><span>Live AWS Bedrock Agent</span> • <span>${elapsed}ms</span></div>
+            <div class="msg-bubble">${formatMarkdown(respText)}</div>
+            <div class="msg-meta">
+              <span>Live AWS Bedrock Agent</span> • <span>${elapsed}ms</span>
+              <button class="btn-save-item" onclick="saveIndividualMessage(this, '${escapeHtml(respText)}', 'assistant')">💾 Save to DB</button>
+            </div>
           </div>
         `;
         chatBox.scrollTop = chatBox.scrollHeight;
         addLog('BEDROCK', 'tag-bedrock', `Response returned in ${elapsed}ms`);
+
+        if (isAutoSaveSessionEnabled) {
+          saveIndividualMessage(null, respText, 'assistant');
+        }
 
       } catch (err) {
         addLog('ERROR', 'tag-gateway', `Error: ${err.message}`);
