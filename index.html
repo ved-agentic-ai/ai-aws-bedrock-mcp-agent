@@ -3337,10 +3337,21 @@ def handler(event, context):
         });
         const d = await res.json();
 
+        if (d.status === 'error') {
+          if (cfFill) { cfFill.style.width = '100%'; cfFill.style.background = '#ef4444'; }
+          if (cfStatus) { cfStatus.innerText = 'CREATE_FAILED'; cfStatus.style.color = '#ef4444'; }
+          if (cfLog) {
+            cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[DEPLOY_ERROR]</span> ${d.message}`;
+          }
+          addCloudWatchLog('CFN ERROR', 'tag-gateway', `CloudFormation Error: ${d.message}`);
+          showToast('Deployment Error', d.message, 'error');
+          return;
+        }
+
         if (cfFill) { cfFill.style.width = '100%'; cfFill.style.background = '#10b981'; }
         if (cfStatus) { cfStatus.innerText = 'CREATE_COMPLETE'; cfStatus.style.color = '#10b981'; }
         if (cfLog) {
-          cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span class="cf-log-success">[SUCCESS]</span> CloudFormation stack CREATE_COMPLETE verified. All active AWS resources active.`;
+          cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span class="cf-log-success">[SUCCESS]</span> ${d.message || 'CloudFormation stack CREATE_COMPLETE verified.'}`;
         }
 
         addCloudWatchLog('SUCCESS', 'tag-gateway', 'CloudFormation stack CREATE_COMPLETE verified via Boto3 SDK.');
@@ -3348,7 +3359,8 @@ def handler(event, context):
         showToast('Deploy Complete', d.message || 'CloudFormation Stack CREATE_COMPLETE verified!', 'success');
       } catch (err) {
         if (cfStatus) { cfStatus.innerText = 'CREATE_FAILED'; cfStatus.style.color = '#ef4444'; }
-        addCloudWatchLog('ERROR', 'tag-gateway', `Deployment error: ${err.message}`);
+        addCloudWatchLog('ERROR', 'tag-gateway', `Deployment exception: ${err.message}`);
+        showToast('Deploy Exception', err.message, 'error');
       }
     }
 
