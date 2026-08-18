@@ -40,6 +40,8 @@ def app(environ, start_response):
             res_data = handle_session_history(payload)
         elif path == '/api/deploy':
             res_data = handle_deploy(payload)
+        elif path == '/api/teardown/inspect':
+            res_data = handle_teardown_inspect(payload)
         elif path == '/api/teardown':
             res_data = handle_teardown(payload)
         elif path == '/api/status':
@@ -293,23 +295,80 @@ def handle_deploy(payload):
     except Exception as e:
         return {"status": "error", "message": f"Deployment Exception: {str(e)}"}
 
+def purge_s3_bucket_objects(s3_client, bucket_name):
+    purged_count = 0
+    try:
+        paginator = s3_client.get_paginator('list_objects_v2')
+        pages = paginator.paginate(Bucket=bucket_name)
+        for page in pages:
+            if 'Contents' in page:
+                delete_keys = [{'Key': obj['Key']} for obj in page['Contents']]
+                if delete_keys:
+                    s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': delete_keys})
+                    purged_count += len(delete_keys)
+        print(f"[S3_PURGE] Purged {purged_count} objects from {bucket_name}", flush=True)
+    except Exception as e:
+        print(f"[S3_PURGE_WARN] {str(e)}", flush=True)
+    return purged_count
+
+def handle_teardown_inspect(payload):
+    access_key = payload.get('access_key')
+    secret_key = payload.get('secret_key')
+    region = payload.get('region', 'us-east-1')
+
+    bucket_name = get_physical_s3_bucket(payload)
+    s3_objects_count = 0
+
+    try:
+        if access_key and secret_key:
+            s3 = boto3.client('s3', region_name=region,
+                              aws_access_key_id=access_key,
+                              aws_secret_access_key=secret_key)
+        else:
+            s3 = boto3.client('s3', region_name=region)
+
+        res = s3.list_objects_v2(Bucket=bucket_name)
+        s3_objects_count = res.get('KeyCount', 0)
+    except Exception:
+        s3_objects_count = 0
+
+    return {
+        "status": "success",
+        "stack_name": STACK_NAME,
+        "bucket_name": bucket_name,
+        "s3_objects_count": s3_objects_count,
+        "dynamo_table": "AgentMemoryTable",
+        "lambda_functions": [f"{STACK_NAME}-AgentRuntime", f"{STACK_NAME}-McpToolServer"],
+        "api_gateway": f"{STACK_NAME}-HttpApi"
+    }
+
 def handle_teardown(payload):
     access_key = payload.get('access_key')
     secret_key = payload.get('secret_key')
     region = payload.get('region', 'us-east-1')
 
+    bucket_name = get_physical_s3_bucket(payload)
+
+    purged_count = 0
     try:
         if access_key and secret_key:
+            s3 = boto3.client('s3', region_name=region,
+                              aws_access_key_id=access_key,
+                              aws_secret_access_key=secret_key)
             cfn = boto3.client('cloudformation', region_name=region,
                                aws_access_key_id=access_key,
                                aws_secret_access_key=secret_key)
         else:
+            s3 = boto3.client('s3', region_name=region)
             cfn = boto3.client('cloudformation', region_name=region)
 
+        purged_count = purge_s3_bucket_objects(s3, bucket_name)
         cfn.delete_stack(StackName=STACK_NAME)
+
         return {
             "status": "success",
-            "message": "CloudFormation Stack deletion initiated on AWS. Teardown in progress."
+            "purged_s3_objects": purged_count,
+            "message": f"Purged {purged_count} objects from S3 bucket {bucket_name} & initiated CloudFormation stack deletion!"
         }
 
     except ClientError as e:

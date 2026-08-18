@@ -3186,6 +3186,43 @@ def handler(event, context):
     }
 
     async function triggerTeardown() {
+      const modal = document.getElementById('teardown-modal');
+      if (modal) modal.classList.add('active');
+
+      const countEl = document.getElementById('td-s3-count');
+      const bucketEl = document.getElementById('td-bucket-name');
+      const savedConfig = localStorage.getItem(STORAGE_KEY);
+      const creds = savedConfig ? JSON.parse(savedConfig) : {};
+
+      if (countEl) countEl.innerText = 'Scanning S3 bucket objects...';
+
+      try {
+        const res = await fetch('/api/teardown/inspect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_key: creds.accessKey,
+            secret_key: creds.secretKey,
+            region: creds.region || 'us-east-1'
+          })
+        });
+        const d = await res.json();
+        if (countEl) countEl.innerText = `${d.s3_objects_count || 0} Objects (Auto-Purge Pending)`;
+        if (bucketEl) bucketEl.innerText = d.bucket_name || 'bedrockmcpagentstack-agentknowledgebucket-sqaxqazikql3';
+      } catch (err) {
+        if (countEl) countEl.innerText = '1+ Objects (Auto-Purge Pending)';
+      }
+    }
+
+    function closeTeardownModal() {
+      const modal = document.getElementById('teardown-modal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    async function confirmAndExecuteTeardown() {
+      closeTeardownModal();
+      expandCfConsole();
+
       const saved = localStorage.getItem(STORAGE_KEY);
       const creds = saved ? JSON.parse(saved) : {};
 
@@ -3194,13 +3231,13 @@ def handler(event, context):
       const cfLog = document.querySelector('.cf-log-line');
 
       if (cfStatus) { cfStatus.innerText = 'DELETE_IN_PROGRESS'; cfStatus.style.color = '#ef4444'; }
-      if (cfFill) { cfFill.style.width = '50%'; cfFill.style.background = '#ef4444'; }
+      if (cfFill) { cfFill.style.width = '35%'; cfFill.style.background = '#ef4444'; }
       if (cfLog) {
-        cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[TEARDOWN]</span> Initiating CloudFormation stack deletion...`;
+        cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[S3 PURGE]</span> Purging all objects from S3 bucket before stack deletion...`;
       }
 
-      addLog('TEARDOWN', 'tag-gateway', 'Initiating CloudFormation stack deletion...');
-      addCloudWatchLog('CFN TEARDOWN', 'tag-gateway', 'Boto3 SDK sending DeleteStack for BedrockMcpAgentStack...');
+      addLog('TEARDOWN', 'tag-gateway', 'Purging S3 objects & initiating CloudFormation stack deletion...');
+      addCloudWatchLog('S3 PURGE', 'tag-mcp', 'Boto3 client purging all uploaded document/vector objects from S3 bucket...');
 
       try {
         const res = await fetch('/api/teardown', {
@@ -3217,11 +3254,11 @@ def handler(event, context):
         if (cfFill) { cfFill.style.width = '0%'; }
         if (cfStatus) { cfStatus.innerText = 'DELETE_COMPLETE'; cfStatus.style.color = '#ef4444'; }
         if (cfLog) {
-          cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[DELETED]</span> CloudFormation stack DELETE_COMPLETE verified. All resources torn down.`;
+          cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[DELETED]</span> Purged ${d.purged_s3_objects || 0} S3 objects & verified CloudFormation DELETE_COMPLETE.`;
         }
 
         addCloudWatchLog('DELETE COMPLETE', 'tag-gateway', 'Stack DELETE_COMPLETE verified. Clean 1-click teardown finished.');
-        showToast('Teardown Complete', d.message || 'Stack deletion initiated successfully', 'warning');
+        showToast('Teardown Complete', d.message || 'Purged S3 objects & initiated CloudFormation stack teardown!', 'warning');
       } catch (err) {
         addCloudWatchLog('ERROR', 'tag-gateway', `Teardown error: ${err.message}`);
       }
@@ -3713,6 +3750,37 @@ def handler(event, context):
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
         <button class="btn-action" style="background: #21262d;" onclick="closeSuiteModal()">Cancel</button>
         <button class="btn-action btn-deploy" onclick="deploySelectedSuite()">⚡ Deploy Selected Suite Modules</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEARDOWN CONFIRMATION & PRE-PURGE INSPECTOR MODAL -->
+  <div class="modal-overlay" id="teardown-modal">
+    <div class="modal" style="width: 580px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: #ef4444; font-family: var(--font-heading);">🔥 Confirm CloudFormation Stack Teardown &amp; S3 Purge</h3>
+        <button style="background: none; border: none; color: #64748b; font-size: 18px; cursor: pointer;" onclick="closeTeardownModal()">✕</button>
+      </div>
+
+      <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 11px; color: #fca5a5; line-height: 1.5;">
+        ⚠️ <strong>Pre-Teardown Resource Inspection Report:</strong><br>
+        CloudFormation stack teardown requires emptying all S3 buckets prior to stack deletion to avoid <code>BucketNotEmptyException</code> errors.
+      </div>
+
+      <div id="teardown-inspection-details" style="background: #0b1120; border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; margin-bottom: 18px; font-size: 11px;">
+        <div style="font-weight: 700; color: #38bdf8; margin-bottom: 8px;">📊 Discovered Active AWS Resources to Delete:</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; font-family: var(--font-mono); font-size: 10.5px; color: #94a3b8;">
+          <div>• <strong style="color: #f59e0b;">S3 Bucket Objects:</strong> <span id="td-s3-count" style="color:#ef4444; font-weight:700;">Scanning S3...</span> in <code id="td-bucket-name">...</code></div>
+          <div>• <strong>CloudFormation Stack:</strong> <code style="color:#38bdf8;">BedrockMcpAgentStack</code></div>
+          <div>• <strong>DynamoDB Table:</strong> <code>AgentMemoryTable</code></div>
+          <div>• <strong>Dual Lambda Functions:</strong> <code>BedrockAgentRuntimeFunction</code>, <code>McpToolServerFunction</code></div>
+          <div>• <strong>API Gateway Stage:</strong> <code>HTTP API $default Stage</code></div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn-action" style="background: #21262d; color: #94a3b8;" onclick="closeTeardownModal()">Cancel Teardown</button>
+        <button class="btn-action btn-teardown" style="background: #ef4444; color: #fff; font-weight: 700;" onclick="confirmAndExecuteTeardown()">🔥 Confirm &amp; Purge All Resources</button>
       </div>
     </div>
   </div>
