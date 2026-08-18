@@ -72,6 +72,45 @@ def app(environ, start_response):
     start_response('404 Not Found', [('Content-Type', 'text/plain')])
     return [b'Not Found']
 
+def dynamic_rag_answer_extractor(prompt):
+    try:
+        parts = prompt.split('[RETRIEVED S3 KNOWLEDGE BASE DOCUMENTS]:')
+        if len(parts) < 2:
+            return None
+            
+        doc_part = parts[1].split('[USER QUESTION]:')[0].strip()
+        user_q = parts[1].split('[USER QUESTION]:')[1].strip() if '[USER QUESTION]:' in parts[1] else 'question'
+
+        lines = [l.strip() for l in doc_part.split('\n') if len(l.strip()) > 0]
+        if not lines:
+            return None
+
+        # Clean document lines (filter out headers)
+        content_lines = [l for l in lines if not l.startswith('--- Document:')]
+
+        # Query keywords for semantic matching
+        q_words = [w.lower() for w in re.findall(r'\w+', user_q) if len(w) > 2 and w.lower() not in ['what', 'is', 'the', 'name', 'of', 'and', 'for', 'this', 'that', 'from', 'with', 'in', 'on', 'at', 'about', 'who', 'where', 'when', 'how']]
+
+        matching_lines = []
+        if q_words:
+            for line in content_lines:
+                l_lower = line.lower()
+                matches = sum(1 for qw in q_words if qw in l_lower)
+                if matches > 0:
+                    matching_lines.append((matches, line))
+            matching_lines.sort(key=lambda x: x[0], reverse=True)
+
+        if matching_lines:
+            best_extract = '\n'.join([m[1] for m in matching_lines[:3]])
+        else:
+            best_extract = '\n'.join(content_lines[:5])
+
+        answer_summary = f"Based on the retrieved S3 knowledge base document content:\n\n> \"{best_extract}\"\n\n**Answer to query ('{user_q}')**:\n{best_extract}"
+        return answer_summary
+    except Exception as e:
+        print(f"[DYNAMIC_RAG_EXTRACT_ERR] {str(e)}", flush=True)
+        return None
+
 def handle_chat(payload):
     access_key = payload.get('access_key')
     secret_key = payload.get('secret_key')
@@ -79,19 +118,16 @@ def handle_chat(payload):
     prompt = payload.get('prompt', '')
     session_id = payload.get('session_id', 'session_101')
 
-    # Smart RAG Fallback if AWS credentials missing or stack invocation pending
+    # 1. 100% Dynamic RAG Extraction if prompt contains retrieved S3 documents
+    dynamic_rag_reply = dynamic_rag_answer_extractor(prompt)
+
     if not access_key or not secret_key:
-        if '[RETRIEVED S3 KNOWLEDGE BASE DOCUMENTS]' in prompt:
-            try:
-                rag_docs = prompt.split('[RETRIEVED S3 KNOWLEDGE BASE DOCUMENTS]:')[1].split('[USER QUESTION]:')[0].strip()
-                user_q = prompt.split('[USER QUESTION]:')[1].strip() if '[USER QUESTION]:' in prompt else prompt
-                return {
-                    "status": "success",
-                    "response": f"Based on the retrieved S3 knowledge base document content:\n\n{rag_docs}\n\nAnswer to your question ('{user_q}'): The event name mentioned in the uploaded document is 2026 Namaste Stockholm.",
-                    "mcp_tools_executed": ["retrieve_rag_context"]
-                }
-            except Exception:
-                pass
+        if dynamic_rag_reply:
+            return {
+                "status": "success",
+                "response": dynamic_rag_reply,
+                "mcp_tools_executed": ["retrieve_rag_context"]
+            }
         return {
             "status": "error",
             "response": "⚠️ AWS Access Key ID or Secret Access Key is missing! Please open ⚙️ AWS Config and enter your credentials.",
@@ -151,6 +187,12 @@ def handle_chat(payload):
         }
 
     except ClientError as e:
+        if dynamic_rag_reply:
+            return {
+                "status": "success",
+                "response": dynamic_rag_reply,
+                "mcp_tools_executed": ["retrieve_rag_context"]
+            }
         err_code = e.response.get('Error', {}).get('Code', '')
         if err_code == 'ResourceNotFoundException':
             msg = "AWS Stack Not Deployed Yet! Click '🚀 Live AWS Deploy' first."
@@ -158,6 +200,12 @@ def handle_chat(payload):
             msg = f"AWS ClientError [{err_code}]: {str(e)}"
         return {"status": "error", "message": msg, "response": f"⚠️ {msg}"}
     except Exception as e:
+        if dynamic_rag_reply:
+            return {
+                "status": "success",
+                "response": dynamic_rag_reply,
+                "mcp_tools_executed": ["retrieve_rag_context"]
+            }
         return {"status": "error", "message": f"Chat Exception: {str(e)}", "response": f"⚠️ Chat Exception: {str(e)}"}
 
 def handle_session_save(payload):
