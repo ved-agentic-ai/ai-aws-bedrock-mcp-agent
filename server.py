@@ -314,6 +314,11 @@ def handle_deploy(payload):
         with open(template_path, 'r', encoding='utf-8') as f:
             template_body = f.read()
 
+        # Dynamically substitute CloudFormation Description header to display exact selected modules in AWS Console
+        if selected_modules:
+            clean_desc = f"Modular CloudFormation Deployment: {', '.join(selected_modules)}"
+            template_body = re.sub(r"^Description:\s*>.*?(?=\n\n|\nParameters:)", f"Description: '{clean_desc}'\n", template_body, flags=re.DOTALL | re.MULTILINE)
+
         if access_key and secret_key:
             cfn = boto3.client('cloudformation', region_name=region,
                                aws_access_key_id=access_key,

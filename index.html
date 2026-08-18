@@ -1143,6 +1143,26 @@
     </div>
   </header>
 
+  <!-- ACTIVE RUNNING AWS MODULES BADGES BAR -->
+  <div id="active-modules-running-bar" style="background: #090e1a; border-bottom: 1px solid var(--border-color); padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-family: var(--font-heading); flex-wrap: wrap; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <span style="font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+        ACTIVE RUNNING AWS MODULES:
+      </span>
+      <div id="running-modules-badges" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+        <span class="mod-badge active" id="badge-m1" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;">🧠 Module 1: Core (ACTIVE)</span>
+        <span class="mod-badge active" id="badge-m2" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;">📚 Module 2: RAG (ACTIVE)</span>
+        <span class="mod-badge inactive" id="badge-m3" style="background: rgba(148, 163, 184, 0.08); border: 1px solid #334155; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 10px; opacity: 0.5;">🎯 Module 3: Fine-Tuning (OFF)</span>
+        <span class="mod-badge inactive" id="badge-m4" style="background: rgba(148, 163, 184, 0.08); border: 1px solid #334155; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 10px; opacity: 0.5;">🤖 Module 4: SageMaker (OFF)</span>
+        <span class="mod-badge inactive" id="badge-m5" style="background: rgba(148, 163, 184, 0.08); border: 1px solid #334155; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 10px; opacity: 0.5;">📓 Module 5: Jupyter (OFF)</span>
+      </div>
+    </div>
+    <div style="font-size: 10px; color: #94a3b8; font-family: var(--font-mono);" id="active-modules-summary-text">
+      CloudFormation Stack Status: <span style="color: #10b981; font-weight: 700;">CREATE_COMPLETE</span> (2/5 Modules Active)
+    </div>
+  </div>
+
   <!-- MAIN APP CONTAINER -->
   <div class="app-container">
 
@@ -3536,6 +3556,47 @@ def handler(event, context):
       document.getElementById('suite-modal').classList.remove('active');
     }
 
+    function updateRunningModulesUI(modFlags) {
+      const b1 = document.getElementById('badge-m1');
+      const b2 = document.getElementById('badge-m2');
+      const b3 = document.getElementById('badge-m3');
+      const b4 = document.getElementById('badge-m4');
+      const b5 = document.getElementById('badge-m5');
+      const sumEl = document.getElementById('active-modules-summary-text');
+
+      const setBadge = (el, active, label, activeColor, bg) => {
+        if (!el) return;
+        if (active) {
+          el.className = 'mod-badge active';
+          el.style.background = bg;
+          el.style.border = `1px solid ${activeColor}`;
+          el.style.color = activeColor;
+          el.style.opacity = '1';
+          el.style.fontWeight = '700';
+          el.innerText = `${label} (ACTIVE)`;
+        } else {
+          el.className = 'mod-badge inactive';
+          el.style.background = 'rgba(148, 163, 184, 0.08)';
+          el.style.border = '1px solid #334155';
+          el.style.color = '#64748b';
+          el.style.opacity = '0.5';
+          el.style.fontWeight = '400';
+          el.innerText = `${label} (OFF)`;
+        }
+      };
+
+      setBadge(b1, modFlags.agent, '🧠 Module 1: Core', '#38bdf8', 'rgba(56, 189, 248, 0.15)');
+      setBadge(b2, modFlags.rag, '📚 Module 2: RAG', '#10b981', 'rgba(16, 185, 129, 0.15)');
+      setBadge(b3, modFlags.finetune, '🎯 Module 3: Fine-Tuning', '#c084fc', 'rgba(192, 132, 252, 0.15)');
+      setBadge(b4, modFlags.sagemaker, '🤖 Module 4: SageMaker', '#ec4899', 'rgba(236, 72, 153, 0.15)');
+      setBadge(b5, modFlags.jupyter, '📓 Module 5: Jupyter', '#f59e0b', 'rgba(245, 158, 11, 0.15)');
+
+      const activeCount = Object.values(modFlags).filter(Boolean).length;
+      if (sumEl) {
+        sumEl.innerHTML = `CloudFormation Stack Status: <span style="color: #10b981; font-weight: 700;">CREATE_COMPLETE</span> (${activeCount}/5 Modules Active)`;
+      }
+    }
+
     function deploySelectedSuite() {
       closeSuiteModal();
       const mAgent = document.getElementById('mod-agent')?.checked ?? true;
@@ -3543,6 +3604,8 @@ def handler(event, context):
       const mFine = document.getElementById('mod-finetune')?.checked ?? false;
       const mSage = document.getElementById('mod-sagemaker')?.checked ?? false;
       const mJup = document.getElementById('mod-jupyter')?.checked ?? false;
+
+      updateRunningModulesUI({ agent: mAgent, rag: mRag, finetune: mFine, sagemaker: mSage, jupyter: mJup });
 
       const activeMods = [];
       if (mAgent) activeMods.push('Module 1: Bedrock Agentic Core');
