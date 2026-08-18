@@ -761,29 +761,10 @@
 
     /* FLOATING LOG TICKER DRAWER */
     #floating-log-drawer {
-      position: fixed;
-      bottom: 14px;
-      right: 24px;
-      left: auto;
-      transform: none;
-      background: rgba(9, 14, 26, 0.95);
-      border: 1px solid var(--border-color);
-      border-radius: 30px;
-      padding: 6px 18px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
-      z-index: 999;
-      backdrop-filter: blur(10px);
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      max-width: 450px;
+      display: none !important;
     }
 
     #floating-log-drawer.hidden-drawer {
-      opacity: 0;
-      transform: translateY(20px);
-      pointer-events: none;
       display: none !important;
     }
 
@@ -3187,19 +3168,16 @@ def handler(event, context):
         if (colChat) colChat.classList.add('maximized');
         if (colLogs) colLogs.classList.add('hidden-col');
         if (colInsp) colInsp.classList.add('hidden-col');
-        if (drawer) drawer.classList.remove('hidden-drawer');
         showToast('Fullscreen Chat', 'Chat column maximized to 100% full width', 'info');
       } else if (colKey === 'logs') {
         if (colLogs) colLogs.classList.add('maximized');
         if (colChat) colChat.classList.add('hidden-col');
         if (colInsp) colInsp.classList.add('hidden-col');
-        if (drawer) drawer.classList.add('hidden-drawer');
         showToast('Fullscreen Logs', 'Protocol & CloudWatch logs column maximized', 'info');
       } else if (colKey === 'inspector') {
         if (colInsp) colInsp.classList.add('maximized');
         if (colChat) colChat.classList.add('hidden-col');
         if (colLogs) colLogs.classList.add('hidden-col');
-        if (drawer) drawer.classList.remove('hidden-drawer');
         showToast('Fullscreen Studio', 'Architecture & AI/ML Studio column maximized', 'info');
       }
     }
