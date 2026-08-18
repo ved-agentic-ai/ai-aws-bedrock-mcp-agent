@@ -500,16 +500,21 @@
     .preset-pills {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      padding: 4px 0;
-      margin-bottom: 4px;
+      gap: 10px;
+      padding: 6px 0;
+      margin-bottom: 8px;
+    }
+
+    .preset-pill-wrapper {
+      position: relative;
+      display: inline-block;
     }
 
     .preset-pill {
       background: #090e1a;
       border: 1px solid var(--border-color);
       color: #38bdf8;
-      padding: 5px 11px;
+      padding: 6px 12px;
       border-radius: 20px;
       font-size: 10.5px;
       font-weight: 600;
@@ -521,8 +526,91 @@
     .preset-pill:hover {
       border-color: var(--accent-mcp);
       color: var(--accent-mcp);
-      background: rgba(6, 182, 212, 0.1);
+      background: rgba(6, 182, 212, 0.15);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
     }
+
+    .quick-step-hover-menu {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 0;
+      background: #080d1a;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-width: 270px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(6px);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+
+    .preset-pill-wrapper:hover .quick-step-hover-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .quick-step-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 6px;
+      font-family: var(--font-heading);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .quick-step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 2px;
+    }
+
+    .quick-step-item:hover {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+    }
+
+    .quick-step-num {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #1e293b;
+      color: #38bdf8;
+      font-size: 9.5px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .quick-step-run-all {
+      margin-top: 6px;
+      padding: 6px 10px;
+      background: #10b981;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .quick-step-run-all:hover { opacity: 0.9; }
 
     .input-box {
       display: flex;
@@ -1133,27 +1221,126 @@
         </div>
       </div>
 
-      <!-- PRE-CHAT SESSION PERSISTENCE OVERLAY BANNER -->
-      <div id="session-overlay-banner" style="background: #080d1a; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px;">
-          <span style="font-size: 11px; font-weight: 700; color: #f8fafc;">💾 Session Persistence:</span>
-          <input type="text" id="session-id-input" class="form-input" style="width: 110px; padding: 3px 6px; font-size: 10.5px; font-family: var(--font-mono);" value="session_101" onchange="updateActiveSessionId(this.value)">
-          <button class="btn-action" style="padding: 3px 6px; font-size: 10px; background: #334155; color: #fff;" onclick="generateNewSessionId()">+ New</button>
+      <!-- PRE-CHAT SESSION PERSISTENCE OVERLAY BANNER (2-ROW LAYOUT - NO OVERLAP) -->
+      <div id="session-overlay-banner" style="background: #080d1a; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 8px 14px; display: flex; flex-direction: column; gap: 6px;">
+        <!-- ROW 1: ACTIVE SESSION INPUT & BADGE -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex: 1;">
+            <span style="font-size: 10.5px; font-weight: 700; color: #f8fafc; font-family: var(--font-heading);">💾 Active Session:</span>
+            <input type="text" id="session-id-input" class="form-input" style="width: 105px; padding: 3px 6px; font-size: 10.5px; font-family: var(--font-mono);" value="session_101" onchange="updateActiveSessionId(this.value)">
+            <button class="btn-action" style="padding: 3px 6px; font-size: 10px; background: #334155; color: #fff;" onclick="generateNewSessionId()">+ New</button>
+          </div>
           <span id="session-persistence-badge" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">AUTO-SAVE: session_101</span>
         </div>
 
-        <div style="display: flex; gap: 6px; align-items: center;">
-          <button id="btn-toggle-auto-save" class="btn-action" style="padding: 3px 8px; font-size: 10px; background: #10b981; color: #fff;" onclick="toggleAutoSaveSession(true)">✅ Auto-Save</button>
-          <button id="btn-toggle-ephemeral" class="btn-action" style="padding: 3px 8px; font-size: 10px; background: #21262d; color: #94a3b8;" onclick="toggleAutoSaveSession(false)">🚫 Ephemeral</button>
+        <!-- ROW 2: CLEAN TOGGLE BUTTONS -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <button id="btn-toggle-auto-save" class="btn-action" style="padding: 4px 6px; font-size: 10px; background: #10b981; color: #fff; text-align: center;" onclick="toggleAutoSaveSession(true)">✅ Auto-Save Session</button>
+          <button id="btn-toggle-ephemeral" class="btn-action" style="padding: 4px 6px; font-size: 10px; background: #21262d; color: #94a3b8; text-align: center;" onclick="toggleAutoSaveSession(false)">🚫 Ephemeral Mode</button>
         </div>
       </div>
 
       <div class="chat-input-area">
         <div class="preset-pills">
-          <button class="preset-pill" onclick="sendPreset('Save user session for session_101: Purchased Prime Upgrade')">💾 Save Session (MCP Tool)</button>
-          <button class="preset-pill" onclick="sendPreset('Fetch session history for session_101')">🔍 Query DynamoDB</button>
-          <button class="preset-pill" onclick="sendPreset('Retrieve RAG context for query: Prime upgrade refund policy')">📚 Run Vector RAG Search</button>
-          <button class="preset-pill" onclick="sendPreset('Explain how Model Context Protocol (MCP) works on AWS Bedrock')">💡 Explain MCP Protocol</button>
+          <!-- PILL 1: SAVE SESSION -->
+          <div class="preset-pill-wrapper">
+            <button class="preset-pill" onclick="sendPreset('Save user session for session_101: Purchased Prime Upgrade')">
+              💾 Save Session (MCP Tool)
+            </button>
+            <div class="quick-step-hover-menu">
+              <div class="quick-step-title">⚡ Quick Steps: Save Session</div>
+              <div class="quick-step-item" onclick="executeQuickStep('Save Session Step 1: Validate session_101 active state')">
+                <span class="quick-step-num">1</span>
+                <span>Validate Session State (session_101)</span>
+              </div>
+              <div class="quick-step-item" onclick="executeQuickStep('Save Session Step 2: Construct memory payload JSON')">
+                <span class="quick-step-num">2</span>
+                <span>Construct Session Payload</span>
+              </div>
+              <div class="quick-step-item" onclick="executeQuickStep('Save Session Step 3: Invoke Lambda save_session_data on DynamoDB')">
+                <span class="quick-step-num">3</span>
+                <span>Write to DynamoDB Table</span>
+              </div>
+              <div class="quick-step-run-all" onclick="sendPreset('Save user session for session_101: Purchased Prime Upgrade')">
+                🚀 Execute Full MCP Save Tool
+              </div>
+            </div>
+          </div>
+
+          <!-- PILL 2: QUERY DYNAMODB -->
+          <div class="preset-pill-wrapper">
+            <button class="preset-pill" onclick="sendPreset('Fetch session history for session_101')">
+              🔍 Query DynamoDB
+            </button>
+            <div class="quick-step-hover-menu">
+              <div class="quick-step-title">⚡ Quick Steps: Query DynamoDB</div>
+              <div class="quick-step-item" onclick="executeQuickStep('Query Step 1: Prepare DynamoDB HashKey query for session_101')">
+                <span class="quick-step-num">1</span>
+                <span>Prepare DynamoDB Key Schema</span>
+              </div>
+              <div class="quick-step-item" onclick="executeQuickStep('Query Step 2: Invoke query_database MCP tool on Lambda')">
+                <span class="quick-step-num">2</span>
+                <span>Invoke query_database MCP Tool</span>
+              </div>
+              <div class="quick-step-item" onclick="executeQuickStep('Query Step 3: Format session history output in Markdown')">
+                <span class="quick-step-num">3</span>
+                <span>Format Session History Output</span>
+              </div>
+              <div class="quick-step-run-all" onclick="sendPreset('Fetch session history for session_101')">
+                🚀 Execute Full Query Flow
+              </div>
+            </div>
+          </div>
+
+          <!-- PILL 3: VECTOR RAG SEARCH -->
+          <div class="preset-pill-wrapper">
+            <button class="preset-pill" onclick="sendPreset('Retrieve RAG context for query: Prime upgrade refund policy')">
+              📚 Run Vector RAG Search
+            </button>
+            <div class="quick-step-hover-menu">
+              <div class="quick-step-title">⚡ Quick Steps: Vector RAG Search</div>
+              <div class="quick-step-item" onclick="executeQuickStep('RAG Step 1: Convert query into 384-dim MiniLM vector embedding')">
+                <span class="quick-step-num">1</span>
+                <span>Compute 384-Dim MiniLM Vector</span>
+              </div>
+              <div class="quick-step-item" onclick="executeQuickStep('RAG Step 2: Search FAISS S3 vector index for cosine match')">
+                <span class="quick-step-num">2</span>
+                <span>FAISS Cosine Distance Match (Score: 0.941)</span>
+              </div>
+              <div class="quick-step-item" onclick="executeQuickStep('RAG Step 3: Inject retrieved S3 chunk into Bedrock Agent context')">
+                <span class="quick-step-num">3</span>
+                <span>Inject Context into Bedrock LLM</span>
+              </div>
+              <div class="quick-step-run-all" onclick="sendPreset('Retrieve RAG context for query: Prime upgrade refund policy')">
+                🚀 Execute Full RAG Pipeline
+              </div>
+            </div>
+          </div>
+
+          <!-- PILL 4: EXPLAIN MCP -->
+          <div class="preset-pill-wrapper">
+            <button class="preset-pill" onclick="sendPreset('Explain how Model Context Protocol (MCP) works on AWS Bedrock')">
+              💡 Explain MCP Protocol
+            </button>
+            <div class="quick-step-hover-menu">
+              <div class="quick-step-title">⚡ Quick Steps: MCP Architecture</div>
+              <div class="quick-step-item" onclick="executeQuickStep('MCP Step 1: Explain JSON-RPC tools/list and tools/call specs')">
+                <span class="quick-step-num">1</span>
+                <span>JSON-RPC Protocol Specification</span>
+              </div>
+              <div class="quick-step-item" onclick="executeQuickStep('MCP Step 2: Explain Bedrock Converse API tool config format')">
+                <span class="quick-step-num">2</span>
+                <span>Bedrock Converse API Tool Config</span>
+              </div>
+              <div class="quick-step-item" onclick="executeQuickStep('MCP Step 3: Explain AWS Lambda serverless execution model')">
+                <span class="quick-step-num">3</span>
+                <span>Serverless Lambda Execution</span>
+              </div>
+              <div class="quick-step-run-all" onclick="sendPreset('Explain how Model Context Protocol (MCP) works on AWS Bedrock')">
+                🚀 Execute Full Architecture Explanation
+              </div>
+            </div>
+          </div>
         </div>
         <div class="input-box">
           <input type="text" class="chat-input" id="user-input" placeholder="Ask AI Agent or invoke MCP tools..." onkeydown="if(event.key==='Enter') sendMessage()">
@@ -2593,6 +2780,14 @@ def handler(event, context):
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/\n\n/g, '<br><br>')
         .replace(/\n/g, '<br>');
+    }
+
+    function executeQuickStep(stepDesc) {
+      addLog('QUICK STEP', 'tag-mcp', `Executing Quick Step: ${stepDesc}`);
+      addCloudWatchLog('MCP STEP', 'tag-gateway', `User invoked quick step action: ${stepDesc}`);
+      showToast('Quick Step Triggered', stepDesc, 'success');
+      const input = document.getElementById('user-input');
+      if (input) input.value = stepDesc;
     }
 
     function escapeHtml(str) {
