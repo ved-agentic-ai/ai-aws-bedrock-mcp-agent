@@ -568,42 +568,92 @@ def handle_s3_bucket(payload):
 
 def extract_clean_text_from_file(filename, content_str, file_b64=None):
     clean_lines = []
+    ext = filename.split('.')[-1].lower() if '.' in filename else ''
     
     if file_b64 and ',' in file_b64:
         file_b64 = file_b64.split(',')[1]
-        
+
     if file_b64:
         try:
             raw_bytes = base64.b64decode(file_b64)
 
-            # 1. Decompress zlib streams in PDF (stream ... endstream)
-            import zlib
-            stream_matches = re.findall(rb'stream[\r\n]+(.*?)[\r\n]+endstream', raw_bytes, re.DOTALL)
-            for sm in stream_matches:
+            # A. DOCX WORD DOCUMENTS (.docx)
+            if ext == 'docx':
                 try:
-                    decomp = zlib.decompress(sm)
-                    text_parts = re.findall(r'\((.*?)\)|\[(.*?)\]', decomp.decode('latin1', errors='ignore'))
-                    for tp in text_parts:
-                        t = (tp[0] or tp[1]).strip()
-                        if len(t) > 2 and not t.startswith('/'):
-                            clean_lines.append(t)
+                    import zipfile, io
+                    with zipfile.ZipFile(io.BytesIO(raw_bytes)) as z:
+                        if 'word/document.xml' in z.namelist():
+                            xml_content = z.read('word/document.xml').decode('utf-8', errors='ignore')
+                            texts = re.findall(r'<w:t[^>]*>(.*?)</w:t>', xml_content)
+                            if texts:
+                                clean_lines.append(' '.join(texts))
+                except Exception as docx_err:
+                    print(f"[DOCX_ERR] {str(docx_err)}", flush=True)
+
+            # B. PPTX POWERPOINT PRESENTATIONS (.pptx)
+            elif ext == 'pptx':
+                try:
+                    import zipfile, io
+                    with zipfile.ZipFile(io.BytesIO(raw_bytes)) as z:
+                        slide_files = [f for f in z.namelist() if f.startswith('ppt/slides/slide')]
+                        for sf in slide_files:
+                            xml_content = z.read(sf).decode('utf-8', errors='ignore')
+                            texts = re.findall(r'<a:t[^>]*>(.*?)</a:t>', xml_content)
+                            if texts:
+                                clean_lines.append(' '.join(texts))
+                except Exception as pptx_err:
+                    print(f"[PPTX_ERR] {str(pptx_err)}", flush=True)
+
+            # C. XLSX EXCEL SPREADSHEETS (.xlsx, .xls)
+            elif ext in ['xlsx', 'xls']:
+                try:
+                    import zipfile, io
+                    with zipfile.ZipFile(io.BytesIO(raw_bytes)) as z:
+                        if 'xl/sharedStrings.xml' in z.namelist():
+                            xml_content = z.read('xl/sharedStrings.xml').decode('utf-8', errors='ignore')
+                            texts = re.findall(r'<t[^>]*>(.*?)</t>', xml_content)
+                            if texts:
+                                clean_lines.append(' '.join(texts))
+                except Exception as xlsx_err:
+                    print(f"[XLSX_ERR] {str(xlsx_err)}", flush=True)
+
+            # D. PDF DOCUMENTS (.pdf)
+            elif ext == 'pdf':
+                try:
+                    import zlib
+                    stream_matches = re.findall(rb'stream[\r\n]+(.*?)[\r\n]+endstream', raw_bytes, re.DOTALL)
+                    for sm in stream_matches:
+                        try:
+                            decomp = zlib.decompress(sm)
+                            text_parts = re.findall(r'\((.*?)\)|\[(.*?)\]', decomp.decode('latin1', errors='ignore'))
+                            for tp in text_parts:
+                                t = (tp[0] or tp[1]).strip()
+                                if len(t) > 2 and not t.startswith('/'):
+                                    clean_lines.append(t)
+                        except Exception:
+                            pass
                 except Exception:
                     pass
 
-            # 2. Fallback string extraction across entire binary stream
-            matches = re.findall(rb'[A-Za-z0-9\s.,?!:;\'"()\-_]{3,}', raw_bytes)
-            extracted_strings = [m.decode('utf-8', errors='ignore').strip() for m in matches]
-            for s in extracted_strings:
-                if len(s) > 3 and not any(k in s.lower() for k in ['/type', '/font', '/filter', '/length', 'endstream', 'endobj', '%pdf', 'mediabox', 'fontdescriptor']):
-                    clean_lines.append(s)
+                # Stream string regex extraction
+                matches = re.findall(rb'[A-Za-z0-9\s.,?!:;\'"()\-_]{3,}', raw_bytes)
+                extracted_strings = [m.decode('utf-8', errors='ignore').strip() for m in matches]
+                for s in extracted_strings:
+                    if len(s) > 3 and not any(k in s.lower() for k in ['/type', '/font', '/filter', '/length', 'endstream', 'endobj', '%pdf', 'mediabox', 'fontdescriptor', 'catalog']):
+                        clean_lines.append(s)
+
+            # E. TXT / JSON / CSV / MD / LOG Fallback
+            else:
+                text = raw_bytes.decode('utf-8', errors='ignore')
+                lines = [l.strip() for l in text.split('\n') if len(l.strip()) > 0]
+                clean_lines.extend(lines)
 
         except Exception as e:
-            print(f"[PDF_EXTRACT_WARN] {str(e)}", flush=True)
+            print(f"[UNIVERSAL_PARSER_WARN] {str(e)}", flush=True)
 
-    # Clean filename as explicit title hint if empty
-    filename_title = filename.replace('_', ' ').replace('-', ' ').replace('.pdf', '').replace('.docx', '').replace('.txt', '')
-    clean_lines.insert(0, f"Document Name / Title: {filename_title}")
-    clean_lines.insert(1, f"Event Name: {filename_title}")
+    if not clean_lines and content_str:
+        lines = [l.strip() for l in content_str.split('\n') if len(l.strip()) > 0]
+        clean_lines = [l for l in lines if not l.lower().startswith(('%pdf', 'endstream', 'endobj'))]
 
     # Remove duplicates preserving order
     seen = set()
@@ -614,7 +664,8 @@ def extract_clean_text_from_file(filename, content_str, file_b64=None):
             seen.add(l_str)
             deduped.append(l_str)
 
-    return deduped if len(deduped) > 0 else [f"Document content for {filename_title}"]
+    filename_title = filename.replace('_', ' ').replace('-', ' ')
+    return deduped if len(deduped) > 0 else [f"Ingested document content from {filename_title}"]
 
 def handle_s3_upload(payload):
     access_key = payload.get('access_key')
