@@ -609,6 +609,16 @@ def handle_teardown_inspect(payload):
 def execute_self_healing_teardown(cfn_client, s3_client, payload):
     purged_count = purge_all_stack_s3_buckets(s3_client, cfn_client, payload)
 
+    # Purge local s3_vectors cache on teardown so RAG documents list clears completely
+    local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3_vectors')
+    if os.path.exists(local_dir):
+        for f in os.listdir(local_dir):
+            if f.endswith('.json'):
+                try:
+                    os.remove(os.path.join(local_dir, f))
+                except Exception:
+                    pass
+
     import time
     time.sleep(1.0)
 

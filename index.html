@@ -778,6 +778,36 @@
       max-width: 450px;
     }
 
+    .rag-dropdown-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .rag-hover-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      background: #080d1a;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 8px;
+      padding: 8px 10px;
+      min-width: 290px;
+      max-width: 380px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(4px);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 999;
+      backdrop-filter: blur(10px);
+    }
+
+    .rag-dropdown-wrapper:hover .rag-hover-menu {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
     .terminal-header {
       height: 42px;
       background: #0d1322;
@@ -1159,12 +1189,22 @@
         <span class="collapsed-strip-label">💬 CHAT &amp; AGENT CONSOLE</span>
         <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">▶</span>
       </div>
-      <div class="col-toolbar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 12px;">
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0;">
-          <div class="col-title" style="white-space: nowrap;">💬 Chat &amp; Live Agent Console</div>
-          <div id="rag-inline-header-pills" style="display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-            <button class="btn-action" style="padding: 2px 7px; font-size: 9px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 10px; font-weight: 700; cursor: pointer; white-space: nowrap;" onclick="fetchAndShowRagDocumentsModal()" title="Click to view S3 Vector Knowledge Base">📚 Active S3 RAG (<span id="rag-doc-count-badge">0</span>)</button>
-            <div id="rag-docs-pills-container" style="display: inline-flex; gap: 4px; align-items: center; flex-wrap: wrap;"></div>
+      <div class="col-toolbar" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: nowrap; padding: 6px 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+          <div class="col-title" style="white-space: nowrap;">💬 Chat Console</div>
+          <div class="rag-dropdown-wrapper">
+            <button class="btn-action" style="padding: 2px 8px; font-size: 9px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 12px; font-weight: 700; cursor: pointer; white-space: nowrap;" onclick="fetchAndShowRagDocumentsModal()">
+              📚 Active S3 RAG (<span id="rag-doc-count-badge">0</span> Docs) ▼
+            </button>
+            <div class="rag-hover-menu">
+              <div style="font-size: 10px; font-weight: 700; color: #10b981; margin-bottom: 6px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                <span>📚 Ingested S3 Vector Knowledge Base:</span>
+                <span style="font-size: 9px; color: #38bdf8; cursor: pointer;" onclick="fetchAndShowRagDocumentsModal()">Expand 🔍</span>
+              </div>
+              <div id="rag-docs-pills-container" style="display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow-y: auto;">
+                <span style="font-size: 9px; color: var(--text-dim); font-style: italic;">No S3 documents uploaded</span>
+              </div>
+            </div>
           </div>
         </div>
         <div class="col-controls">
@@ -3068,15 +3108,17 @@ def handler(event, context):
             else if (['docx', 'doc'].includes(ext)) icon = '📝';
             
             html += `
-              <span style="font-size: 9px; padding: 1px 6px; border-radius: 10px; background: #061712; color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); font-weight: 600; display: inline-flex; align-items: center; gap: 3px; cursor: pointer; white-space: nowrap;" onclick="fetchAndShowRagDocumentsModal()" title="${escapeHtml(doc.s3_path)} - Click to inspect S3 vector chunks">
-                ${icon} ${escapeHtml(doc.filename)}
-              </span>
+              <div style="font-size: 9.5px; padding: 4px 6px; border-radius: 4px; background: #06121a; color: #34d399; border: 1px solid rgba(52, 211, 153, 0.25); display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="fetchAndShowRagDocumentsModal()" title="${escapeHtml(doc.s3_path)}">
+                <span style="font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 200px;">${icon} ${escapeHtml(doc.filename)}</span>
+                <span style="font-size: 8.5px; color: #94a3b8; font-family: var(--font-mono);">${doc.chunk_count} chunks</span>
+              </div>
             `;
           });
           pillsContainer.innerHTML = html;
         } else {
-          pillsContainer.innerHTML = `<span style="font-size: 9px; color: var(--text-dim); font-style: italic;">(No S3 files uploaded)</span>`;
+          window.RAG_DOCUMENTS = [];
           if (badge) badge.innerText = '0';
+          pillsContainer.innerHTML = `<span style="font-size: 9px; color: var(--text-dim); font-style: italic;">No S3 documents active</span>`;
         }
       } catch (err) {
         console.warn('[RAG_DOCS_FETCH_ERR]', err);
@@ -3526,10 +3568,12 @@ def handler(event, context):
 
             if (currStatus === 'DELETE_COMPLETE' || currStatus === 'NOT_FOUND' || attempts > 30) {
               clearInterval(pollInterval);
+              window.RAG_DOCUMENTS = [];
+              loadActiveRagDocuments();
               if (cfFill) { cfFill.style.width = '0%'; }
               if (cfStatus) { cfStatus.innerText = 'DELETE_COMPLETE'; cfStatus.style.color = '#ef4444'; }
               if (cfLog) {
-                cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[DELETED]</span> CloudFormation stack DELETE_COMPLETE verified. All resources torn down.`;
+                cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[DELETED]</span> CloudFormation stack DELETE_COMPLETE verified. All resources &amp; S3 vectors torn down.`;
               }
               addCloudWatchLog('DELETE COMPLETE', 'tag-gateway', 'Stack DELETE_COMPLETE verified. Clean 1-click teardown finished.');
               showToast('Teardown Complete', 'AWS CloudFormation Stack DELETE_COMPLETE verified!', 'warning');
