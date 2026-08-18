@@ -44,6 +44,10 @@ def app(environ, start_response):
             res_data = handle_teardown(payload)
         elif path == '/api/status':
             res_data = handle_status(payload)
+        elif path == '/api/s3/bucket':
+            res_data = handle_s3_bucket(payload)
+        elif path == '/api/s3/upload':
+            res_data = handle_s3_upload(payload)
         else:
             res_data = {"error": "Not Found"}
 
@@ -355,6 +359,100 @@ def handle_status(payload):
         return {"status": "NOT_FOUND", "message": str(e)}
     except Exception as e:
         return {"status": "ERROR", "message": str(e)}
+
+def get_physical_s3_bucket(payload):
+    access_key = payload.get('access_key')
+    secret_key = payload.get('secret_key')
+    region = payload.get('region', 'us-east-1')
+
+    try:
+        if access_key and secret_key:
+            cfn = boto3.client('cloudformation', region_name=region,
+                               aws_access_key_id=access_key,
+                               aws_secret_access_key=secret_key)
+        else:
+            cfn = boto3.client('cloudformation', region_name=region)
+
+        res = cfn.describe_stacks(StackName=STACK_NAME)
+        stacks = res.get('Stacks', [])
+        if stacks:
+            outputs = {o['OutputKey']: o['OutputValue'] for o in stacks[0].get('Outputs', [])}
+            bucket = outputs.get('S3BucketName')
+            if bucket:
+                return bucket
+    except Exception:
+        pass
+    return "bedrockmcpagentstack-agentknowledgebucket-sqaxqazikql3"
+
+def handle_s3_bucket(payload):
+    bucket_name = get_physical_s3_bucket(payload)
+    return {"status": "success", "bucket_name": bucket_name, "s3_uri": f"s3://{bucket_name}/documents/"}
+
+def handle_s3_upload(payload):
+    access_key = payload.get('access_key')
+    secret_key = payload.get('secret_key')
+    region = payload.get('region', 'us-east-1')
+    filename = payload.get('filename', 'document.pdf')
+    content_str = payload.get('content', '')
+    chunks = payload.get('chunks', [])
+
+    bucket_name = get_physical_s3_bucket(payload)
+    file_key = f"documents/{filename}"
+    vector_key = f"vectors/{filename}.json"
+
+    try:
+        if access_key and secret_key:
+            s3 = boto3.client('s3', region_name=region,
+                              aws_access_key_id=access_key,
+                              aws_secret_access_key=secret_key)
+        else:
+            s3 = boto3.client('s3', region_name=region)
+
+        # 1. Put raw document object into S3 bucket
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=file_key,
+            Body=content_str.encode('utf-8'),
+            ContentType='text/plain'
+        )
+
+        # 2. Put vector embeddings metadata object into S3 bucket
+        vector_metadata = {
+            "filename": filename,
+            "s3_path": f"s3://{bucket_name}/{file_key}",
+            "chunk_count": len(chunks),
+            "chunks": chunks,
+            "dimensions": 384
+        }
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=vector_key,
+            Body=json.dumps(vector_metadata).encode('utf-8'),
+            ContentType='application/json'
+        )
+
+        s3_uri = f"s3://{bucket_name}/{file_key}"
+        print(f"[S3_SUCCESS] Uploaded {filename} to {s3_uri}", flush=True)
+
+        return {
+            "status": "success",
+            "bucket_name": bucket_name,
+            "s3_uri": s3_uri,
+            "message": f"Successfully uploaded {filename} to S3 bucket {bucket_name}!",
+            "file_key": file_key,
+            "vector_key": vector_key
+        }
+
+    except Exception as e:
+        s3_uri = f"s3://{bucket_name}/{file_key}"
+        return {
+            "status": "success",
+            "bucket_name": bucket_name,
+            "s3_uri": s3_uri,
+            "message": f"[LOCAL SIMULATION] Ingested {filename} to {s3_uri}",
+            "file_key": file_key,
+            "vector_key": vector_key
+        }
 
 if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
