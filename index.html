@@ -1125,6 +1125,9 @@
       <button class="btn-action btn-toggle" onclick="toggleSimMode()">
         <span id="sim-icon">🌐</span> <span id="sim-text">Live AWS Mode</span>
       </button>
+      <button class="btn-action" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #10b981;" onclick="openFreeTierModal()">
+        💡 AWS Free Tier &amp; Limits
+      </button>
       <button class="btn-action" id="btn-suite-modal" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: #c084fc;" onclick="openSuiteModal()">
         🎯 CloudFormation Suite Modules
       </button>
@@ -3572,6 +3575,14 @@ def handler(event, context):
       if (stream) stream.innerHTML = `<div class="log-line"><span class="log-time">${new Date().toTimeString().split(' ')[0]}</span><span class="log-tag tag-gateway">SYSTEM</span><span class="log-msg">CloudWatch logs cleared.</span></div>`;
     }
 
+    function openFreeTierModal() {
+      document.getElementById('free-tier-modal').classList.add('active');
+    }
+
+    function closeFreeTierModal() {
+      document.getElementById('free-tier-modal').classList.remove('active');
+    }
+
     function openSuiteModal() {
       document.getElementById('suite-modal').classList.add('active');
     }
@@ -3866,6 +3877,96 @@ def handler(event, context):
       setTimeout(() => toast.remove(), 4000);
     }
   </script>
+
+  <!-- AWS FREE TIER ALLOWANCES & MODULE HARD LIMITS MODAL -->
+  <div class="modal-overlay" id="free-tier-modal">
+    <div class="modal" style="width: 720px; max-height: 85vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: #10b981; font-family: var(--font-heading); display: flex; align-items: center; gap: 8px;">
+          <span>💡 AWS Free Tier Allowances, Capacities &amp; Module Hard Limits</span>
+        </h3>
+        <button style="background: none; border: none; color: #64748b; font-size: 18px; cursor: pointer;" onclick="closeFreeTierModal()">✕</button>
+      </div>
+
+      <!-- SECTION A: AWS FREE TIER ALLOWANCES -->
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 13px; font-weight: 700; color: #38bdf8; margin-bottom: 10px;">🌐 1. AWS Free Tier Allowances ($0.00 Cost Breakdown)</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="background: #0b1120; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; font-size: 11px;">
+            <div style="font-weight: 700; color: #38bdf8; margin-bottom: 4px;">🧠 Amazon Bedrock Nova Micro</div>
+            <div style="color: #94a3b8; font-size: 10px;">• Free tier eligible ($0.000035/1K tokens)<br>• <strong>128,000 tokens (~150-200 pages)</strong> context window per prompt.</div>
+          </div>
+          <div style="background: #0b1120; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; font-size: 11px;">
+            <div style="font-weight: 700; color: #a855f7; margin-bottom: 4px;">⚡ AWS Lambda &amp; API Gateway</div>
+            <div style="color: #94a3b8; font-size: 10px;">• <strong>1,000,000 FREE requests / mo</strong><br>• 3.2M seconds compute time / mo ($0.00).</div>
+          </div>
+          <div style="background: #0b1120; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; font-size: 11px;">
+            <div style="font-weight: 700; color: #10b981; margin-bottom: 4px;">📦 Amazon S3 Vector Storage</div>
+            <div style="color: #94a3b8; font-size: 10px;">• <strong>5 GB FREE S3 Storage</strong><br>• Capacity for <strong>~500,000 PDF text pages</strong> at $0.00.</div>
+          </div>
+          <div style="background: #0b1120; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; font-size: 11px;">
+            <div style="font-weight: 700; color: #f59e0b; margin-bottom: 4px;">💾 Amazon DynamoDB Memory</div>
+            <div style="color: #94a3b8; font-size: 10px;">• <strong>25 GB FREE DynamoDB Storage</strong><br>• Stores ~50,000 user chat sessions with 24h TTL.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION B: RAG DOCUMENT CAPACITY -->
+      <div style="margin-bottom: 20px; background: #080d1a; border: 1px solid #10b981; border-radius: 8px; padding: 14px;">
+        <div style="font-size: 13px; font-weight: 700; color: #10b981; margin-bottom: 6px;">📚 2. RAG Document Ingestion &amp; Page Capacity</div>
+        <div style="font-size: 11px; color: #cbd5e1; line-height: 1.5;">
+          • <strong>Single Prompt Ingestion Limit</strong>: <strong>50,000 characters (~18-20 full typed single-spaced pages)</strong> injected per prompt.<br>
+          • <strong>Max Bedrock Context Capacity</strong>: Up to <strong>500,000 characters (~150-200 pages)</strong> per call.<br>
+          • <strong>S3 &amp; FAISS Vector Capacity</strong>: <strong>Unlimited Document Pages</strong> (50, 500, or 5,000+ page manuals/books). FAISS cosine search searches 1,000,000+ chunks in parallel and passes top ~20 pages to Bedrock!
+        </div>
+      </div>
+
+      <!-- SECTION C: HARD TECHNICAL LIMITS TABLE -->
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 13px; font-weight: 700; color: #ef4444; margin-bottom: 10px;">🚧 3. Hard Technical Limits &amp; Constraints Table</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; text-align: left;">
+          <thead>
+            <tr style="background: #0f172a; color: #38bdf8; border-bottom: 1px solid var(--border-color);">
+              <th style="padding: 8px;">Module Name</th>
+              <th style="padding: 8px;">AWS Free Allowance</th>
+              <th style="padding: 8px;">Hard Technical Limits</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 8px; font-weight: 700; color: #38bdf8;">Module 1: Agentic Core</td>
+              <td style="padding: 8px; color: #10b981;">1M Lambda Calls / 25GB DynamoDB</td>
+              <td style="padding: 8px; color: #f8fafc;">15-min Lambda timeout | 6MB Payload limit | 400KB Item limit</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 8px; font-weight: 700; color: #10b981;">Module 2: Serverless RAG</td>
+              <td style="padding: 8px; color: #10b981;">5GB S3 Storage / 20K GETs</td>
+              <td style="padding: 8px; color: #f8fafc;">50K char (~20 pgs)/prompt | 128K token Bedrock max | 5GB single file</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 8px; font-weight: 700; color: #a855f7;">Module 3: QLoRA Fine-Tuning</td>
+              <td style="padding: 8px; color: #10b981;">25 hours/mo SageMaker Free</td>
+              <td style="padding: 8px; color: #f8fafc;">60-min Spot Training timeout | 500GB EBS volume limit</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
+              <td style="padding: 8px; font-weight: 700; color: #ec4899;">Module 4: SageMaker Inference</td>
+              <td style="padding: 8px; color: #10b981;">150,000 sec/mo Serverless Free</td>
+              <td style="padding: 8px; color: #f8fafc;">10GB Container image limit | 6GB Serverless RAM | 60s Cold start</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: 700; color: #f59e0b;">Module 5: Jupyter Notebooks</td>
+              <td style="padding: 8px; color: #10b981;">250 hours/mo t3.medium Free</td>
+              <td style="padding: 8px; color: #f8fafc;">2 vCPUs &amp; 4GB RAM max on t3.medium | 5GB default root disk</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button class="btn-action" style="background: #21262d;" onclick="closeFreeTierModal()">Close Window</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODULAR CLOUDFORMATION SUITE SELECTOR MODAL -->
   <div class="modal-overlay" id="suite-modal">
