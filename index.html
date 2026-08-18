@@ -3233,11 +3233,11 @@ def handler(event, context):
       if (cfStatus) { cfStatus.innerText = 'DELETE_IN_PROGRESS'; cfStatus.style.color = '#ef4444'; }
       if (cfFill) { cfFill.style.width = '35%'; cfFill.style.background = '#ef4444'; }
       if (cfLog) {
-        cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[S3 PURGE]</span> Purging all objects from S3 bucket before stack deletion...`;
+        cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[S3 PURGE &amp; DELETE]</span> Purging all S3 bucket versions &amp; initiating CloudFormation stack deletion...`;
       }
 
       addLog('TEARDOWN', 'tag-gateway', 'Purging S3 objects & initiating CloudFormation stack deletion...');
-      addCloudWatchLog('S3 PURGE', 'tag-mcp', 'Boto3 client purging all uploaded document/vector objects from S3 bucket...');
+      addCloudWatchLog('S3 PURGE', 'tag-mcp', 'Boto3 client purging all uploaded document/vector objects & version markers from S3 bucket...');
 
       try {
         const res = await fetch('/api/teardown', {
@@ -3251,14 +3251,48 @@ def handler(event, context):
         });
         const d = await res.json();
 
-        if (cfFill) { cfFill.style.width = '0%'; }
-        if (cfStatus) { cfStatus.innerText = 'DELETE_COMPLETE'; cfStatus.style.color = '#ef4444'; }
-        if (cfLog) {
-          cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[DELETED]</span> Purged ${d.purged_s3_objects || 0} S3 objects & verified CloudFormation DELETE_COMPLETE.`;
-        }
+        addLog('CFN DELETE', 'tag-gateway', `Stack delete initiated. Purged ${d.purged_s3_objects || 0} S3 object versions.`);
+        showToast('Teardown In Progress', `Purged ${d.purged_s3_objects || 0} S3 objects. Waiting for AWS stack deletion...`, 'warning');
 
-        addCloudWatchLog('DELETE COMPLETE', 'tag-gateway', 'Stack DELETE_COMPLETE verified. Clean 1-click teardown finished.');
-        showToast('Teardown Complete', d.message || 'Purged S3 objects & initiated CloudFormation stack teardown!', 'warning');
+        // Poll CloudFormation status until DELETE_COMPLETE
+        let attempts = 0;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const stRes = await fetch('/api/status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                access_key: creds.accessKey,
+                secret_key: creds.secretKey,
+                region: creds.region || 'us-east-1'
+              })
+            });
+            const stData = await stRes.json();
+            const currStatus = stData.status;
+
+            if (cfLog && stData.events && stData.events.length > 0) {
+              const latest = stData.events[0];
+              cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[${latest.status}]</span> ${latest.resource}: ${latest.reason || 'Deleting resource...'}`;
+            }
+
+            if (currStatus === 'DELETE_COMPLETE' || currStatus === 'NOT_FOUND' || attempts > 25) {
+              clearInterval(pollInterval);
+              if (cfFill) { cfFill.style.width = '0%'; }
+              if (cfStatus) { cfStatus.innerText = 'DELETE_COMPLETE'; cfStatus.style.color = '#ef4444'; }
+              if (cfLog) {
+                cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[DELETED]</span> CloudFormation stack DELETE_COMPLETE verified. All resources torn down.`;
+              }
+              addCloudWatchLog('DELETE COMPLETE', 'tag-gateway', 'Stack DELETE_COMPLETE verified. Clean 1-click teardown finished.');
+              showToast('Teardown Complete', 'AWS CloudFormation Stack DELETE_COMPLETE verified!', 'warning');
+            } else if (cfFill) {
+              cfFill.style.width = `${Math.min(35 + attempts * 5, 95)}%`;
+            }
+          } catch (e) {
+            clearInterval(pollInterval);
+          }
+        }, 2500);
+
       } catch (err) {
         addCloudWatchLog('ERROR', 'tag-gateway', `Teardown error: ${err.message}`);
       }

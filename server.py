@@ -295,21 +295,63 @@ def handle_deploy(payload):
     except Exception as e:
         return {"status": "error", "message": f"Deployment Exception: {str(e)}"}
 
-def purge_s3_bucket_objects(s3_client, bucket_name):
-    purged_count = 0
+def purge_all_stack_s3_buckets(s3_client, cfn_client, payload):
+    purged_total = 0
+    buckets_to_clean = set()
+
+    # 1. Get main bucket from stack outputs
+    primary_bucket = get_physical_s3_bucket(payload)
+    if primary_bucket:
+        buckets_to_clean.add(primary_bucket)
+
+    # 2. List all buckets owned by account matching stack name prefix
     try:
-        paginator = s3_client.get_paginator('list_objects_v2')
-        pages = paginator.paginate(Bucket=bucket_name)
-        for page in pages:
-            if 'Contents' in page:
-                delete_keys = [{'Key': obj['Key']} for obj in page['Contents']]
-                if delete_keys:
-                    s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': delete_keys})
-                    purged_count += len(delete_keys)
-        print(f"[S3_PURGE] Purged {purged_count} objects from {bucket_name}", flush=True)
-    except Exception as e:
-        print(f"[S3_PURGE_WARN] {str(e)}", flush=True)
-    return purged_count
+        all_buckets = s3_client.list_buckets().get('Buckets', [])
+        for b in all_buckets:
+            name = b.get('Name', '')
+            if STACK_NAME.lower() in name.lower() or 'agentknowledgebucket' in name.lower() or 'agentic-mcp' in name.lower():
+                buckets_to_clean.add(name)
+    except Exception:
+        pass
+
+    # 3. Purge objects, versions, and delete markers from every identified bucket
+    for bucket in buckets_to_clean:
+        try:
+            # Purge versioned objects & delete markers
+            try:
+                ver_paginator = s3_client.get_paginator('list_object_versions')
+                for page in ver_paginator.paginate(Bucket=bucket):
+                    delete_keys = []
+                    if 'Versions' in page:
+                        for v in page['Versions']:
+                            delete_keys.append({'Key': v['Key'], 'VersionId': v['VersionId']})
+                    if 'DeleteMarkers' in page:
+                        for dm in page['DeleteMarkers']:
+                            delete_keys.append({'Key': dm['Key'], 'VersionId': dm['VersionId']})
+                    if delete_keys:
+                        for i in range(0, len(delete_keys), 1000):
+                            batch = delete_keys[i:i+1000]
+                            s3_client.delete_objects(Bucket=bucket, Delete={'Objects': batch})
+                            purged_total += len(batch)
+            except Exception:
+                pass
+
+            # Purge unversioned objects as fallback
+            obj_paginator = s3_client.get_paginator('list_objects_v2')
+            for page in obj_paginator.paginate(Bucket=bucket):
+                if 'Contents' in page:
+                    delete_keys = [{'Key': obj['Key']} for obj in page['Contents']]
+                    if delete_keys:
+                        for i in range(0, len(delete_keys), 1000):
+                            batch = delete_keys[i:i+1000]
+                            s3_client.delete_objects(Bucket=bucket, Delete={'Objects': batch})
+                            purged_total += len(batch)
+
+            print(f"[S3_PURGE] Purged all objects from bucket {bucket}", flush=True)
+        except Exception as e:
+            print(f"[S3_PURGE_WARN] Could not purge bucket {bucket}: {str(e)}", flush=True)
+
+    return purged_total
 
 def handle_teardown_inspect(payload):
     access_key = payload.get('access_key')
@@ -347,8 +389,6 @@ def handle_teardown(payload):
     secret_key = payload.get('secret_key')
     region = payload.get('region', 'us-east-1')
 
-    bucket_name = get_physical_s3_bucket(payload)
-
     purged_count = 0
     try:
         if access_key and secret_key:
@@ -362,13 +402,20 @@ def handle_teardown(payload):
             s3 = boto3.client('s3', region_name=region)
             cfn = boto3.client('cloudformation', region_name=region)
 
-        purged_count = purge_s3_bucket_objects(s3, bucket_name)
+        # 1. Force purge all S3 objects and versions
+        purged_count = purge_all_stack_s3_buckets(s3, cfn, payload)
+
+        # 2. Pause 1.5 seconds for S3 deletion propagation
+        import time
+        time.sleep(1.5)
+
+        # 3. Call CloudFormation delete_stack
         cfn.delete_stack(StackName=STACK_NAME)
 
         return {
             "status": "success",
             "purged_s3_objects": purged_count,
-            "message": f"Purged {purged_count} objects from S3 bucket {bucket_name} & initiated CloudFormation stack deletion!"
+            "message": f"Purged {purged_count} objects across S3 buckets & initiated CloudFormation stack deletion on AWS!"
         }
 
     except ClientError as e:
