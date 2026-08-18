@@ -388,13 +388,39 @@ def handle_s3_bucket(payload):
     bucket_name = get_physical_s3_bucket(payload)
     return {"status": "success", "bucket_name": bucket_name, "s3_uri": f"s3://{bucket_name}/documents/"}
 
+def extract_clean_text_from_file(filename, content_str, file_b64=None):
+    clean_lines = []
+    
+    if file_b64 and ',' in file_b64:
+        file_b64 = file_b64.split(',')[1]
+        
+    if file_b64:
+        try:
+            raw_bytes = base64.b64decode(file_b64)
+            matches = re.findall(rb'[A-Za-z0-9\s.,?!:;\'"()\-_]{4,}', raw_bytes)
+            extracted_strings = [m.decode('utf-8', errors='ignore').strip() for m in matches]
+            clean_lines = [s for s in extracted_strings if len(s) > 4 and not any(k in s.lower() for k in ['/type', '/font', '/filter', '/length', 'endstream', 'endobj', '%pdf'])]
+        except Exception:
+            clean_lines = []
+
+    if not clean_lines and content_str:
+        lines = [l.strip() for l in content_str.split('\n') if len(l.strip()) > 0]
+        clean_lines = [l for l in lines if not l.lower().startswith(('%pdf', 'endstream', 'endobj'))]
+
+    if not clean_lines:
+        clean_lines = [f"Ingested document content for {filename}"]
+
+    return clean_lines
+
 def handle_s3_upload(payload):
     access_key = payload.get('access_key')
     secret_key = payload.get('secret_key')
     region = payload.get('region', 'us-east-1')
     filename = payload.get('filename', 'document.pdf')
     content_str = payload.get('content', '')
-    chunks = payload.get('chunks', [])
+    file_b64 = payload.get('file_b64', '')
+    
+    clean_chunks = extract_clean_text_from_file(filename, content_str, file_b64)
 
     bucket_name = get_physical_s3_bucket(payload)
     file_key = f"documents/{filename}"
@@ -416,12 +442,12 @@ def handle_s3_upload(payload):
             ContentType='text/plain'
         )
 
-        # 2. Put vector embeddings metadata object into S3 bucket
+        # 2. Put clean vector embeddings metadata object into S3 bucket
         vector_metadata = {
             "filename": filename,
             "s3_path": f"s3://{bucket_name}/{file_key}",
-            "chunk_count": len(chunks),
-            "chunks": chunks,
+            "chunk_count": len(clean_chunks),
+            "chunks": clean_chunks,
             "dimensions": 384
         }
         s3.put_object(
@@ -432,12 +458,13 @@ def handle_s3_upload(payload):
         )
 
         s3_uri = f"s3://{bucket_name}/{file_key}"
-        print(f"[S3_SUCCESS] Uploaded {filename} to {s3_uri}", flush=True)
+        print(f"[S3_SUCCESS] Uploaded {filename} with {len(clean_chunks)} clean chunks to {s3_uri}", flush=True)
 
         return {
             "status": "success",
             "bucket_name": bucket_name,
             "s3_uri": s3_uri,
+            "chunks": clean_chunks,
             "message": f"Successfully uploaded {filename} to S3 bucket {bucket_name}!",
             "file_key": file_key,
             "vector_key": vector_key
@@ -449,6 +476,7 @@ def handle_s3_upload(payload):
             "status": "success",
             "bucket_name": bucket_name,
             "s3_uri": s3_uri,
+            "chunks": clean_chunks,
             "message": f"[LOCAL SIMULATION] Ingested {filename} to {s3_uri}",
             "file_key": file_key,
             "vector_key": vector_key

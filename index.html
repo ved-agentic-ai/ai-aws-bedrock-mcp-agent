@@ -2973,8 +2973,15 @@ def handler(event, context):
       const drawer = document.getElementById('floating-log-drawer');
 
       [colChat, colLogs, colInsp].forEach(c => {
-        if (c) c.classList.remove('maximized', 'hidden-col', 'collapsed-strip');
+        if (c) {
+          c.classList.remove('maximized', 'hidden-col', 'collapsed-strip');
+          c.style.cssText = '';
+        }
       });
+
+      if (colChat) colChat.style.flex = '1.2 1 0%';
+      if (colLogs) colLogs.style.flex = '0.9 1 0%';
+      if (colInsp) colInsp.style.flex = '1.1 1 0%';
 
       if (drawer) drawer.classList.add('hidden-drawer');
       showToast('Layout Restored', 'Restored 3-Column Split View', 'info');
@@ -3349,15 +3356,12 @@ def handler(event, context):
       
       const reader = new FileReader();
       reader.onload = async function(e) {
-        const rawContent = e.target.result || `Document text snippet from ${file.name}`;
-        const contentStr = typeof rawContent === 'string' ? rawContent : `Document file ${file.name}`;
-        const lines = contentStr.split('\n').filter(l => l.trim().length > 0);
-        const chunks = lines.length > 0 ? lines : [`Chunk from ${file.name}`];
-
+        const fileB64 = e.target.result || '';
         showToast('Uploading to S3 Bucket', `Uploading ${file.name} to active CloudFormation S3 bucket...`, 'info');
         addLog('S3 UPLOAD', 'tag-mcp', `Initiating Boto3 S3 put_object for ${file.name}...`);
 
         let s3Uri = `s3://bedrockmcpagentstack-agentknowledgebucket-sqaxqazikql3/documents/${file.name}`;
+        let cleanChunks = [`Extracted content from ${file.name}`];
 
         try {
           const res = await fetch('/api/s3/upload', {
@@ -3365,8 +3369,7 @@ def handler(event, context):
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               filename: file.name,
-              content: contentStr,
-              chunks: chunks,
+              file_b64: fileB64,
               access_key: creds.accessKey,
               secret_key: creds.secretKey,
               region: creds.region || 'us-east-1'
@@ -3374,6 +3377,7 @@ def handler(event, context):
           });
           const d = await res.json();
           if (d.s3_uri) s3Uri = d.s3_uri;
+          if (d.chunks && d.chunks.length > 0) cleanChunks = d.chunks;
         } catch (err) {
           console.warn('S3 API upload warning:', err);
         }
@@ -3381,18 +3385,18 @@ def handler(event, context):
         window.RAG_DOCUMENTS.push({
           filename: file.name,
           ext: ext,
-          text: contentStr,
-          chunks: chunks,
+          text: cleanChunks.join(' '),
+          chunks: cleanChunks,
           s3_uri: s3Uri
         });
 
         renderS3DocumentsList();
 
         showToast('S3 Upload Success', `File ${file.name} uploaded to ${s3Uri}!`, 'success');
-        addLog('S3 SUCCESS', 'tag-mcp', `Successfully stored ${file.name} at ${s3Uri} with ${chunks.length} 384-dim vector embeddings.`);
-        addCloudWatchLog('S3 PUT', 'tag-mcp', `Boto3 put_object -> ${s3Uri} (Size: ${contentStr.length} bytes)`);
+        addLog('S3 SUCCESS', 'tag-mcp', `Successfully stored ${file.name} at ${s3Uri} with ${cleanChunks.length} clean vector chunks.`);
+        addCloudWatchLog('S3 PUT', 'tag-mcp', `Boto3 put_object -> ${s3Uri} (${cleanChunks.length} chunks extracted)`);
       };
-      reader.readAsText(file);
+      reader.readAsDataURL(file);
     }
 
     function uploadDatasetToS3() {
