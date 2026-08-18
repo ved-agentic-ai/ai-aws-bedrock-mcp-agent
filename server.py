@@ -295,16 +295,81 @@ def handle_deploy(payload):
     except Exception as e:
         return {"status": "error", "message": f"Deployment Exception: {str(e)}"}
 
+def force_delete_s3_bucket(s3_client, bucket_name):
+    purged_count = 0
+    try:
+        # 1. Abort all incomplete multipart uploads
+        try:
+            mp_paginator = s3_client.get_paginator('list_multipart_uploads')
+            for page in mp_paginator.paginate(Bucket=bucket_name):
+                for mp in page.get('Uploads', []):
+                    s3_client.abort_multipart_upload(Bucket=bucket_name, Key=mp['Key'], UploadId=mp['UploadId'])
+        except Exception as mp_err:
+            print(f"[MP_WARN] {str(mp_err)}", flush=True)
+
+        # 2. Delete all object versions and delete markers
+        try:
+            ver_paginator = s3_client.get_paginator('list_object_versions')
+            for page in ver_paginator.paginate(Bucket=bucket_name):
+                delete_keys = []
+                for v in page.get('Versions', []):
+                    delete_keys.append({'Key': v['Key'], 'VersionId': v['VersionId']})
+                for dm in page.get('DeleteMarkers', []):
+                    delete_keys.append({'Key': dm['Key'], 'VersionId': dm['VersionId']})
+                if delete_keys:
+                    for i in range(0, len(delete_keys), 1000):
+                        batch = delete_keys[i:i+1000]
+                        s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': batch})
+                        purged_count += len(batch)
+        except Exception as v_err:
+            print(f"[VER_WARN] {str(v_err)}", flush=True)
+
+        # 3. Delete all unversioned objects
+        try:
+            obj_paginator = s3_client.get_paginator('list_objects_v2')
+            for page in obj_paginator.paginate(Bucket=bucket_name):
+                delete_keys = [{'Key': obj['Key']} for obj in page.get('Contents', [])]
+                if delete_keys:
+                    for i in range(0, len(delete_keys), 1000):
+                        batch = delete_keys[i:i+1000]
+                        s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': batch})
+                        purged_count += len(batch)
+        except Exception as o_err:
+            print(f"[OBJ_WARN] {str(o_err)}", flush=True)
+
+        # 4. Physically delete the S3 bucket container itself from AWS
+        try:
+            s3_client.delete_bucket(Bucket=bucket_name)
+            print(f"[S3_DELETE_SUCCESS] Successfully deleted S3 bucket container {bucket_name} from AWS!", flush=True)
+        except Exception as b_err:
+            print(f"[S3_DELETE_BUCKET_WARN] Could not delete bucket container {bucket_name}: {str(b_err)}", flush=True)
+
+    except Exception as e:
+        print(f"[S3_FORCE_DELETE_ERR] Error clearing bucket {bucket_name}: {str(e)}", flush=True)
+
+    return purged_count
+
 def purge_all_stack_s3_buckets(s3_client, cfn_client, payload):
     purged_total = 0
     buckets_to_clean = set()
 
-    # 1. Get main bucket from stack outputs
+    # 1. Inspect physical resource IDs directly from CloudFormation stack resources
+    try:
+        res_res = cfn_client.describe_stack_resources(StackName=STACK_NAME).get('StackResources', [])
+        for r in res_res:
+            if r.get('ResourceType') == 'AWS::S3::Bucket':
+                physical_id = r.get('PhysicalResourceId')
+                if physical_id:
+                    buckets_to_clean.add(physical_id)
+    except Exception:
+        pass
+
+    # 2. Get main bucket from stack outputs fallback
     primary_bucket = get_physical_s3_bucket(payload)
     if primary_bucket:
         buckets_to_clean.add(primary_bucket)
 
-    # 2. List all buckets owned by account matching stack name prefix
+    # 3. List all buckets owned by AWS account matching stack name prefix
     try:
         all_buckets = s3_client.list_buckets().get('Buckets', [])
         for b in all_buckets:
@@ -314,49 +379,10 @@ def purge_all_stack_s3_buckets(s3_client, cfn_client, payload):
     except Exception:
         pass
 
-    # 3. Purge objects, versions, and delete markers from every identified bucket
+    # 4. Force purge & physically delete every identified S3 bucket
     for bucket in buckets_to_clean:
-        try:
-            # Purge versioned objects & delete markers
-            try:
-                ver_paginator = s3_client.get_paginator('list_object_versions')
-                for page in ver_paginator.paginate(Bucket=bucket):
-                    delete_keys = []
-                    if 'Versions' in page:
-                        for v in page['Versions']:
-                            delete_keys.append({'Key': v['Key'], 'VersionId': v['VersionId']})
-                    if 'DeleteMarkers' in page:
-                        for dm in page['DeleteMarkers']:
-                            delete_keys.append({'Key': dm['Key'], 'VersionId': dm['VersionId']})
-                    if delete_keys:
-                        for i in range(0, len(delete_keys), 1000):
-                            batch = delete_keys[i:i+1000]
-                            s3_client.delete_objects(Bucket=bucket, Delete={'Objects': batch})
-                            purged_total += len(batch)
-            except Exception:
-                pass
-
-            # Purge unversioned objects as fallback
-            obj_paginator = s3_client.get_paginator('list_objects_v2')
-            for page in obj_paginator.paginate(Bucket=bucket):
-                if 'Contents' in page:
-                    delete_keys = [{'Key': obj['Key']} for obj in page['Contents']]
-                    if delete_keys:
-                        for i in range(0, len(delete_keys), 1000):
-                            batch = delete_keys[i:i+1000]
-                            s3_client.delete_objects(Bucket=bucket, Delete={'Objects': batch})
-                            purged_total += len(batch)
-
-            # Physically delete the empty S3 bucket container
-            try:
-                s3_client.delete_bucket(Bucket=bucket)
-                print(f"[S3_DELETE_BUCKET] Successfully deleted S3 bucket container {bucket}", flush=True)
-            except Exception as b_err:
-                print(f"[S3_DELETE_BUCKET_WARN] Could not delete bucket container {bucket}: {str(b_err)}", flush=True)
-
-            print(f"[S3_PURGE] Purged all objects from bucket {bucket}", flush=True)
-        except Exception as e:
-            print(f"[S3_PURGE_WARN] Could not purge bucket {bucket}: {str(e)}", flush=True)
+        count = force_delete_s3_bucket(s3_client, bucket)
+        purged_total += count
 
     return purged_total
 
