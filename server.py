@@ -959,7 +959,52 @@ def handle_s3_upload(payload):
         }
 
 def handle_s3_documents_list(payload):
+    access_key = payload.get('access_key')
+    secret_key = payload.get('secret_key')
+    region = payload.get('region', 'us-east-1')
+    bucket_name = get_physical_s3_bucket(payload)
+
     docs = []
+
+    # 1. Real-time S3 Bucket Check via Boto3 if credentials available
+    if access_key and secret_key:
+        try:
+            s3 = boto3.client('s3', region_name=region,
+                              aws_access_key_id=access_key,
+                              aws_secret_access_key=secret_key)
+            objs = s3.list_objects_v2(Bucket=bucket_name, Prefix="vectors/")
+            for item in objs.get('Contents', []):
+                key = item['Key']
+                if key.endswith('.json'):
+                    try:
+                        obj_res = s3.get_object(Bucket=bucket_name, Key=key)
+                        meta = json.loads(obj_res['Body'].read().decode('utf-8'))
+                        fname = meta.get('filename', key.split('/')[-1].replace('.json', ''))
+                        chunks = meta.get('chunks', [])
+                        docs.append({
+                            "filename": fname,
+                            "chunk_count": len(chunks),
+                            "s3_path": meta.get('s3_path', f"s3://{bucket_name}/{key}"),
+                            "sample_text": chunks[0][:150] if chunks else ""
+                        })
+                    except Exception:
+                        pass
+            return {"status": "success", "documents": docs, "total": len(docs), "realtime_s3": True}
+        except ClientError as e:
+            # If stack is deleted or bucket doesn't exist, return empty list and purge local cache!
+            err_code = e.response.get('Error', {}).get('Code', '')
+            if err_code in ['NoSuchBucket', 'AccessDenied', '404', 'ResourceNotFoundException']:
+                local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3_vectors')
+                if os.path.exists(local_dir):
+                    for f in os.listdir(local_dir):
+                        if f.endswith('.json'):
+                            try: os.remove(os.path.join(local_dir, f))
+                            except Exception: pass
+                return {"status": "success", "documents": [], "total": 0, "message": "Bucket/Stack deleted"}
+        except Exception:
+            pass
+
+    # 2. Local Fallback only if credentials not passed
     local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3_vectors')
     if os.path.exists(local_dir):
         for f in os.listdir(local_dir):
