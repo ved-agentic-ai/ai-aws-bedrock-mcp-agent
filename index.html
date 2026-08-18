@@ -557,14 +557,124 @@
 
     .btn-send:hover { transform: scale(1.02); }
 
-    /* MIDDLE COL: REALTIME TERMINAL LOG STREAM */
-    .terminal-col {
-      flex: 0.9;
-      display: flex;
-      flex-direction: column;
+    /* 3-COLUMN FLEXIBLE LAYOUT SYSTEM */
+    .app-col {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .app-col.maximized {
+      flex: 1 0 100% !important;
+      min-width: 100% !important;
+      z-index: 10;
+    }
+
+    .app-col.hidden-col {
+      display: none !important;
+    }
+
+    .app-col.collapsed-strip {
+      flex: 0 0 36px !important;
+      width: 36px !important;
+      min-width: 36px !important;
+      overflow: hidden !important;
+      background: #060a14 !important;
       border-right: 1px solid var(--border-color);
-      background: #080c16;
-      min-width: 0;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .collapsed-strip-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      height: 100%;
+      gap: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      padding: 16px 0;
+    }
+
+    .col-toolbar {
+      background: #090e1a;
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      user-select: none;
+    }
+
+    .col-title {
+      font-weight: 700;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .col-controls {
+      display: flex;
+      gap: 4px;
+    }
+
+    .btn-col-ctl {
+      background: #1e293b;
+      border: 1px solid var(--border-color);
+      color: #94a3b8;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-col-ctl:hover {
+      background: #334155;
+      color: #38bdf8;
+      border-color: #38bdf8;
+    }
+
+    /* FLOATING LOG TICKER DRAWER */
+    #floating-log-drawer {
+      position: fixed;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(9, 14, 26, 0.95);
+      border: 1px solid var(--border-color);
+      border-radius: 30px;
+      padding: 6px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7);
+      z-index: 999;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 90vw;
+    }
+
+    #floating-log-drawer.hidden-drawer {
+      opacity: 0;
+      transform: translate(-50%, 20px);
+      pointer-events: none;
+    }
+
+    .log-ticker-text {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: #38bdf8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 450px;
     }
 
     .terminal-header {
@@ -883,7 +993,15 @@
   <div class="app-container">
 
     <!-- LEFT COL: CHAT & AGENTIC PIPELINE -->
-    <div class="chat-col">
+    <div class="chat-col app-col">
+      <div class="col-toolbar">
+        <div class="col-title">💬 Chat &amp; Live Agent Console</div>
+        <div class="col-controls">
+          <button class="btn-col-ctl" title="Maximize Chat Column (100% Fullscreen)" onclick="maximizeCol('chat')">⛶ Maximize</button>
+          <button class="btn-col-ctl" title="Collapse Chat Column" onclick="collapseCol('chat')">◀ Collapse</button>
+          <button class="btn-col-ctl" title="Reset 3-Column Split View" onclick="resetColLayout()">⟳ Reset View</button>
+        </div>
+      </div>
       <!-- SCREENSHOT EXACT MATCH TOP DASHBOARD -->
       <div class="dashboard-top-panel">
         <!-- CF BOTO3 CONTROLLER CARD (COLLAPSIBLE BY DEFAULT) -->
@@ -1016,7 +1134,15 @@
     </div>
 
     <!-- MIDDLE COL: DUAL LOG STREAMS PANEL (PROTOCOL EVENTS + CLOUDWATCH) -->
-    <div class="terminal-col" style="display:flex; flex-direction:column;">
+    <div class="terminal-col app-col" style="display:flex; flex-direction:column;">
+      <div class="col-toolbar">
+        <div class="col-title">📜 Realtime Protocol &amp; CloudWatch Logs</div>
+        <div class="col-controls">
+          <button class="btn-col-ctl" title="Maximize Logs Column" onclick="maximizeCol('logs')">⛶ Maximize</button>
+          <button class="btn-col-ctl" title="Collapse Logs Column" onclick="collapseCol('logs')">◀ Collapse</button>
+          <button class="btn-col-ctl" title="Reset 3-Column Split View" onclick="resetColLayout()">⟳ Reset View</button>
+        </div>
+      </div>
       <!-- STREAM 1: REAL-TIME PROTOCOL EVENT STREAM -->
       <div style="flex: 1; display: flex; flex-direction: column; border-bottom: 1px solid var(--border-color); min-height: 0;">
         <div class="terminal-header">
@@ -1059,7 +1185,15 @@
     </div>
 
     <!-- RIGHT COL: INSPECTOR & ARCHITECTURE TABS -->
-    <div class="inspector-col">
+    <div class="inspector-col app-col">
+      <div class="col-toolbar">
+        <div class="col-title">🔬 Architecture, AI/ML Studio &amp; Labs</div>
+        <div class="col-controls">
+          <button class="btn-col-ctl" title="Maximize Inspector Column (100% Fullscreen Architecture)" onclick="maximizeCol('inspector')">⛶ Maximize</button>
+          <button class="btn-col-ctl" title="Collapse Inspector Column" onclick="collapseCol('inspector')">▶ Collapse</button>
+          <button class="btn-col-ctl" title="Reset 3-Column Split View" onclick="resetColLayout()">⟳ Reset View</button>
+        </div>
+      </div>
       <div class="tab-bar">
         <button class="tab-btn active" onclick="switchTab(this, 'arch')">🗺️ Architecture</button>
         <button class="tab-btn" onclick="switchTab(this, 'aiml')">🔬 AI/ML Studio &amp; Lab</button>
@@ -2528,6 +2662,92 @@ def handler(event, context):
       if (st) st.innerText = label;
     }
 
+    function updateLogTickerLine(time, tag, message) {
+      const ticker = document.getElementById('log-ticker-line');
+      if (ticker) ticker.innerText = `[${time}] ${tag}: ${message}`;
+    }
+
+    function resetColLayout() {
+      const colChat = document.querySelector('.chat-col');
+      const colLogs = document.querySelector('.terminal-col');
+      const colInsp = document.querySelector('.inspector-col');
+      const drawer = document.getElementById('floating-log-drawer');
+
+      [colChat, colLogs, colInsp].forEach(c => {
+        if (c) c.classList.remove('maximized', 'hidden-col', 'collapsed-strip');
+      });
+
+      if (drawer) drawer.classList.add('hidden-drawer');
+      showToast('Layout Restored', 'Restored 3-Column Split View', 'info');
+    }
+
+    function maximizeCol(colKey) {
+      const colChat = document.querySelector('.chat-col');
+      const colLogs = document.querySelector('.terminal-col');
+      const colInsp = document.querySelector('.inspector-col');
+      const drawer = document.getElementById('floating-log-drawer');
+
+      resetColLayout();
+
+      if (colKey === 'chat') {
+        if (colChat) colChat.classList.add('maximized');
+        if (colLogs) colLogs.classList.add('hidden-col');
+        if (colInsp) colInsp.classList.add('hidden-col');
+        if (drawer) drawer.classList.remove('hidden-drawer');
+        showToast('Fullscreen Chat', 'Chat column maximized to 100% full width', 'info');
+      } else if (colKey === 'logs') {
+        if (colLogs) colLogs.classList.add('maximized');
+        if (colChat) colChat.classList.add('hidden-col');
+        if (colInsp) colInsp.classList.add('hidden-col');
+        if (drawer) drawer.classList.add('hidden-drawer');
+        showToast('Fullscreen Logs', 'Protocol & CloudWatch logs column maximized', 'info');
+      } else if (colKey === 'inspector') {
+        if (colInsp) colInsp.classList.add('maximized');
+        if (colChat) colChat.classList.add('hidden-col');
+        if (colLogs) colLogs.classList.add('hidden-col');
+        if (drawer) drawer.classList.remove('hidden-drawer');
+        showToast('Fullscreen Studio', 'Architecture & AI/ML Studio column maximized', 'info');
+      }
+    }
+
+    function collapseCol(colKey) {
+      const colChat = document.querySelector('.chat-col');
+      const colLogs = document.querySelector('.terminal-col');
+      const colInsp = document.querySelector('.inspector-col');
+      const drawer = document.getElementById('floating-log-drawer');
+
+      if (colKey === 'chat') {
+        if (colChat) colChat.classList.toggle('collapsed-strip');
+        showToast('Column Toggled', 'Chat column collapse toggled', 'info');
+      } else if (colKey === 'logs') {
+        if (colLogs) colLogs.classList.toggle('collapsed-strip');
+        if (colLogs && colLogs.classList.contains('collapsed-strip')) {
+          if (drawer) drawer.classList.remove('hidden-drawer');
+        } else {
+          if (drawer) drawer.classList.add('hidden-drawer');
+        }
+        showToast('Column Toggled', 'Logs column collapse toggled', 'info');
+      } else if (colKey === 'inspector') {
+        if (colInsp) colInsp.classList.toggle('collapsed-strip');
+        showToast('Column Toggled', 'Studio column collapse toggled', 'info');
+      }
+    }
+
+    function expandLogsFromDrawer() {
+      const colLogs = document.querySelector('.terminal-col');
+      if (colLogs) {
+        colLogs.classList.remove('hidden-col', 'collapsed-strip');
+        colLogs.classList.add('maximized');
+      }
+      const colChat = document.querySelector('.chat-col');
+      const colInsp = document.querySelector('.inspector-col');
+      if (colChat) colChat.classList.add('hidden-col');
+      if (colInsp) colInsp.classList.add('hidden-col');
+      const drawer = document.getElementById('floating-log-drawer');
+      if (drawer) drawer.classList.add('hidden-drawer');
+      showToast('Logs Opened', 'Expanded Logs Column from Floating Live Drawer', 'success');
+    }
+
     function addLog(tag, tagClass, message) {
       const stream = document.getElementById('protocol-log-stream');
       if (!stream) return;
@@ -2540,6 +2760,7 @@ def handler(event, context):
         </div>
       `;
       stream.scrollTop = stream.scrollHeight;
+      updateLogTickerLine(time, tag, message);
     }
 
     function addCloudWatchLog(tag, tagClass, message) {
@@ -2554,6 +2775,7 @@ def handler(event, context):
         </div>
       `;
       stream.scrollTop = stream.scrollHeight;
+      updateLogTickerLine(time, tag, message);
     }
 
     async function triggerDeploy() {
@@ -3067,6 +3289,13 @@ def handler(event, context):
         <button class="btn-action btn-deploy" onclick="deploySelectedSuite()">⚡ Deploy Selected Suite Modules</button>
       </div>
     </div>
+  </div>
+
+  <!-- FLOATING LIVE LOG TICKER DRAWER -->
+  <div id="floating-log-drawer" class="hidden-drawer">
+    <span style="font-size: 11px; font-weight: 700; color: #10b981;">📜 LIVE LOG TICKER:</span>
+    <span class="log-ticker-text" id="log-ticker-line">Ready. Mode: Live AWS Bedrock MCP Agent.</span>
+    <button class="btn-action" style="padding: 3px 12px; font-size: 10.5px; background: #38bdf8; color: #000; font-weight: 700; border: none; border-radius: 12px; cursor: pointer;" onclick="expandLogsFromDrawer()">📜 Open Full Logs Panel</button>
   </div>
 </body>
 </html>
