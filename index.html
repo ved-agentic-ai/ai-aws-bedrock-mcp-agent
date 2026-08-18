@@ -2323,6 +2323,21 @@ Click 'Trigger Continuous Retraining Pipeline' to execute end-to-end MLOps DAG w
             100% Infrastructure-as-Code automation template provisioning IAM roles, Lambda functions, DynamoDB tables, and API Gateway endpoints with 1-click deploy and clean teardown.
           </div>
         </div>
+
+        <div class="card" style="border: 1px solid #38bdf8; background: rgba(56, 189, 248, 0.06); margin-top: 14px;">
+          <div class="card-title" style="color: #38bdf8; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+            💡 Why Use Model Context Protocol (MCP) vs. Normal DB Queries?
+          </div>
+          <div class="card-desc" style="font-size: 11px; color: #cbd5e1; line-height: 1.6;">
+            <strong style="color: #f8fafc;">Normal DB Query Way (Hardcoded):</strong><br>
+            Requires writing custom <code>if/else</code> statements and <code>boto3</code> queries manually for specific hardcoded strings. If the user says <em>"Record my purchase history"</em> instead of <em>"Save session"</em>, traditional code breaks unless explicitly programmed.<br><br>
+            
+            <strong style="color: #38bdf8;">The MCP (Model Context Protocol) Way (Autonomous AI Agent):</strong><br>
+            • <strong>Autonomous AI Tool Selection:</strong> Bedrock Nova reads natural language intent, inspects the <code>tools/list</code> schema, and decides <em>when, why, and how</em> to invoke DynamoDB or S3 RAG.<br>
+            • <strong>Universal Portability:</strong> Decouples AI intelligence from tool execution. Any MCP-compliant client (Bedrock, Claude, ChatGPT, Cursor, VS Code) connects to the same Lambda Tool Server without modifying database code.<br>
+            • <strong>Decoupled Security:</strong> The LLM never sees raw AWS credentials, IAM keys, or table names. It passes standardized JSON-RPC payloads through isolated Lambda sandboxes.
+          </div>
+        </div>
       </div>
 
       <!-- TAB 5: COMPLETE FULL CODE INSPECTOR -->
@@ -4354,7 +4369,17 @@ def handler(event, context):
         </div>
       </div>
 
-      <!-- SECTION B: RAG DOCUMENT CAPACITY -->
+      <!-- SECTION B: WHY MODEL CONTEXT PROTOCOL (MCP) -->
+      <div style="margin-bottom: 20px; background: rgba(56, 189, 248, 0.05); border: 1px solid #38bdf8; border-radius: 8px; padding: 14px;">
+        <div style="font-size: 13px; font-weight: 700; color: #38bdf8; margin-bottom: 6px;">🔌 2. Why Use Model Context Protocol (MCP) vs. Normal DB Queries?</div>
+        <div style="font-size: 11px; color: #cbd5e1; line-height: 1.6;">
+          • <strong>Normal DB Query Way (Hardcoded):</strong> Requires writing custom <code>if/else</code> statements and <code>boto3</code> code manually. If the user says <em>"Record my purchase"</em> instead of <em>"Save session"</em>, traditional code breaks.<br>
+          • <strong>The MCP Way (Autonomous Agent):</strong> Bedrock Nova reads natural language intent, inspects the <code>tools/list</code> JSON schema, and decides <em>when, why, and how</em> to invoke DynamoDB or S3 RAG.<br>
+          • <strong>Universal Portability:</strong> Any MCP-compliant client (Bedrock, Claude, ChatGPT, Cursor, VS Code) connects to the same Lambda Tool Server without modifying database code.
+        </div>
+      </div>
+
+      <!-- SECTION C: RAG DOCUMENT CAPACITY -->
       <div style="margin-bottom: 20px; background: #080d1a; border: 1px solid #10b981; border-radius: 8px; padding: 14px;">
         <div style="font-size: 13px; font-weight: 700; color: #10b981; margin-bottom: 6px;">📚 2. RAG Document Ingestion &amp; Page Capacity</div>
         <div style="font-size: 11px; color: #cbd5e1; line-height: 1.5;">
