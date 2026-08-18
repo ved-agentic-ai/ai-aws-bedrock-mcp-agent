@@ -246,54 +246,58 @@
     /* 5 NODE CARDS ROW */
     .nodes-grid {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
     }
 
     .node-card {
       background: linear-gradient(145deg, rgba(14, 21, 38, 0.9), rgba(8, 13, 24, 0.95));
       border: 1px solid rgba(16, 185, 129, 0.35);
       border-radius: 10px;
-      padding: 10px 8px;
+      padding: 8px 6px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      min-height: 92px;
+      min-height: 85px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       backdrop-filter: blur(8px);
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      min-width: 0;
     }
 
     .node-card:hover {
       border-color: rgba(16, 185, 129, 0.8);
       box-shadow: 0 8px 25px rgba(16, 185, 129, 0.25);
-      transform: translateY(-3px);
+      transform: translateY(-2px);
     }
 
     .node-card-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
+      gap: 4px;
     }
 
     .node-card-icon {
-      font-size: 18px;
+      font-size: 16px;
       filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.2));
+      flex-shrink: 0;
     }
 
     .node-card-badge {
-      font-size: 8.5px;
+      font-size: 8px;
       font-weight: 800;
-      padding: 2px 5px;
-      border-radius: 5px;
+      padding: 1px 4px;
+      border-radius: 4px;
       background: rgba(16, 185, 129, 0.15);
       color: #10b981;
       border: 1px solid rgba(16, 185, 129, 0.4);
       font-family: var(--font-mono);
-      letter-spacing: 0.3px;
-      box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
       white-space: nowrap;
+      max-width: 62px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .node-card-title {
@@ -1241,103 +1245,86 @@
       </div>
 
       <div class="chat-input-area">
-        <div class="preset-pills">
-          <!-- PILL 1: SAVE SESSION -->
-          <div class="preset-pill-wrapper">
-            <button class="preset-pill" onclick="sendPreset('Save user session for session_101: Purchased Prime Upgrade')">
-              💾 Save Session (MCP Tool)
+        <div class="preset-pills" style="padding: 2px 0; margin-bottom: 4px;">
+          <!-- SINGLE COMPACT QUICK TILE TRIGGER (SAVING VERTICAL CHAT SPACE) -->
+          <div class="preset-pill-wrapper" style="width: 100%;">
+            <button class="preset-pill" style="width: 100%; display: flex; justify-content: space-between; align-items: center; background: #080d1a; border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; padding: 6px 12px; border-radius: 8px; font-weight: 700;">
+              <span style="display: flex; align-items: center; gap: 6px;">⚡ Quick Actions &amp; Presets Menu</span>
+              <span style="font-size: 10px; color: #38bdf8;">[ Hover to Reveal 4 Presets &amp; Steps ▼ ]</span>
             </button>
-            <div class="quick-step-hover-menu">
-              <div class="quick-step-title">⚡ Quick Steps: Save Session</div>
-              <div class="quick-step-item" onclick="executeQuickStep('Save Session Step 1: Validate session_101 active state')">
-                <span class="quick-step-num">1</span>
-                <span>Validate Session State (session_101)</span>
-              </div>
-              <div class="quick-step-item" onclick="executeQuickStep('Save Session Step 2: Construct memory payload JSON')">
-                <span class="quick-step-num">2</span>
-                <span>Construct Session Payload</span>
-              </div>
-              <div class="quick-step-item" onclick="executeQuickStep('Save Session Step 3: Invoke Lambda save_session_data on DynamoDB')">
-                <span class="quick-step-num">3</span>
-                <span>Write to DynamoDB Table</span>
-              </div>
-              <div class="quick-step-run-all" onclick="sendPreset('Save user session for session_101: Purchased Prime Upgrade')">
-                🚀 Execute Full MCP Save Tool
-              </div>
-            </div>
-          </div>
 
-          <!-- PILL 2: QUERY DYNAMODB -->
-          <div class="preset-pill-wrapper">
-            <button class="preset-pill" onclick="sendPreset('Fetch session history for session_101')">
-              🔍 Query DynamoDB
-            </button>
-            <div class="quick-step-hover-menu">
-              <div class="quick-step-title">⚡ Quick Steps: Query DynamoDB</div>
-              <div class="quick-step-item" onclick="executeQuickStep('Query Step 1: Prepare DynamoDB HashKey query for session_101')">
-                <span class="quick-step-num">1</span>
-                <span>Prepare DynamoDB Key Schema</span>
-              </div>
-              <div class="quick-step-item" onclick="executeQuickStep('Query Step 2: Invoke query_database MCP tool on Lambda')">
-                <span class="quick-step-num">2</span>
-                <span>Invoke query_database MCP Tool</span>
-              </div>
-              <div class="quick-step-item" onclick="executeQuickStep('Query Step 3: Format session history output in Markdown')">
-                <span class="quick-step-num">3</span>
-                <span>Format Session History Output</span>
-              </div>
-              <div class="quick-step-run-all" onclick="sendPreset('Fetch session history for session_101')">
-                🚀 Execute Full Query Flow
-              </div>
-            </div>
-          </div>
+            <!-- HOVER DROPDOWN MENU CONTAINING ALL 4 PRESET CARDS -->
+            <div class="quick-step-hover-menu" style="width: 100%; min-width: 320px; left: 0; bottom: calc(100% + 4px);">
+              <div class="quick-step-title" style="border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 8px;">⚡ Select MCP Tool &amp; Step-by-Step Action:</div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <!-- CARD 1 -->
+                <div style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px;">
+                  <div style="font-size: 10.5px; font-weight: 700; color: #10b981; margin-bottom: 4px;">💾 Save Session</div>
+                  <div class="quick-step-item" onclick="executeQuickStep('Save Session Step 1: Validate session_101 active state')">
+                    <span class="quick-step-num">1</span> Validate Session
+                  </div>
+                  <div class="quick-step-item" onclick="executeQuickStep('Save Session Step 2: Construct memory payload JSON')">
+                    <span class="quick-step-num">2</span> Construct Payload
+                  </div>
+                  <div class="quick-step-item" onclick="executeQuickStep('Save Session Step 3: Invoke Lambda save_session_data')">
+                    <span class="quick-step-num">3</span> Write to DynamoDB
+                  </div>
+                  <div class="quick-step-run-all" onclick="sendPreset('Save user session for session_101: Purchased Prime Upgrade')">
+                    🚀 Run Save Tool
+                  </div>
+                </div>
 
-          <!-- PILL 3: VECTOR RAG SEARCH -->
-          <div class="preset-pill-wrapper">
-            <button class="preset-pill" onclick="sendPreset('Retrieve RAG context for query: Prime upgrade refund policy')">
-              📚 Run Vector RAG Search
-            </button>
-            <div class="quick-step-hover-menu">
-              <div class="quick-step-title">⚡ Quick Steps: Vector RAG Search</div>
-              <div class="quick-step-item" onclick="executeQuickStep('RAG Step 1: Convert query into 384-dim MiniLM vector embedding')">
-                <span class="quick-step-num">1</span>
-                <span>Compute 384-Dim MiniLM Vector</span>
-              </div>
-              <div class="quick-step-item" onclick="executeQuickStep('RAG Step 2: Search FAISS S3 vector index for cosine match')">
-                <span class="quick-step-num">2</span>
-                <span>FAISS Cosine Distance Match (Score: 0.941)</span>
-              </div>
-              <div class="quick-step-item" onclick="executeQuickStep('RAG Step 3: Inject retrieved S3 chunk into Bedrock Agent context')">
-                <span class="quick-step-num">3</span>
-                <span>Inject Context into Bedrock LLM</span>
-              </div>
-              <div class="quick-step-run-all" onclick="sendPreset('Retrieve RAG context for query: Prime upgrade refund policy')">
-                🚀 Execute Full RAG Pipeline
-              </div>
-            </div>
-          </div>
+                <!-- CARD 2 -->
+                <div style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px;">
+                  <div style="font-size: 10.5px; font-weight: 700; color: #3b82f6; margin-bottom: 4px;">🔍 Query DynamoDB</div>
+                  <div class="quick-step-item" onclick="executeQuickStep('Query Step 1: Prepare HashKey query for session_101')">
+                    <span class="quick-step-num">1</span> Prepare HashKey
+                  </div>
+                  <div class="quick-step-item" onclick="executeQuickStep('Query Step 2: Invoke query_database MCP tool')">
+                    <span class="quick-step-num">2</span> Invoke MCP Tool
+                  </div>
+                  <div class="quick-step-item" onclick="executeQuickStep('Query Step 3: Format session history output')">
+                    <span class="quick-step-num">3</span> Format Output
+                  </div>
+                  <div class="quick-step-run-all" style="background: #3b82f6;" onclick="sendPreset('Fetch session history for session_101')">
+                    🚀 Run Query Flow
+                  </div>
+                </div>
 
-          <!-- PILL 4: EXPLAIN MCP -->
-          <div class="preset-pill-wrapper">
-            <button class="preset-pill" onclick="sendPreset('Explain how Model Context Protocol (MCP) works on AWS Bedrock')">
-              💡 Explain MCP Protocol
-            </button>
-            <div class="quick-step-hover-menu">
-              <div class="quick-step-title">⚡ Quick Steps: MCP Architecture</div>
-              <div class="quick-step-item" onclick="executeQuickStep('MCP Step 1: Explain JSON-RPC tools/list and tools/call specs')">
-                <span class="quick-step-num">1</span>
-                <span>JSON-RPC Protocol Specification</span>
-              </div>
-              <div class="quick-step-item" onclick="executeQuickStep('MCP Step 2: Explain Bedrock Converse API tool config format')">
-                <span class="quick-step-num">2</span>
-                <span>Bedrock Converse API Tool Config</span>
-              </div>
-              <div class="quick-step-item" onclick="executeQuickStep('MCP Step 3: Explain AWS Lambda serverless execution model')">
-                <span class="quick-step-num">3</span>
-                <span>Serverless Lambda Execution</span>
-              </div>
-              <div class="quick-step-run-all" onclick="sendPreset('Explain how Model Context Protocol (MCP) works on AWS Bedrock')">
-                🚀 Execute Full Architecture Explanation
+                <!-- CARD 3 -->
+                <div style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px;">
+                  <div style="font-size: 10.5px; font-weight: 700; color: #a855f7; margin-bottom: 4px;">📚 Vector RAG Search</div>
+                  <div class="quick-step-item" onclick="executeQuickStep('RAG Step 1: Compute 384-dim MiniLM vector embedding')">
+                    <span class="quick-step-num">1</span> Compute Vector
+                  </div>
+                  <div class="quick-step-item" onclick="executeQuickStep('RAG Step 2: Search FAISS S3 vector index for cosine match')">
+                    <span class="quick-step-num">2</span> FAISS Match (0.941)
+                  </div>
+                  <div class="quick-step-item" onclick="executeQuickStep('RAG Step 3: Inject retrieved chunk into Bedrock Agent context')">
+                    <span class="quick-step-num">3</span> Inject LLM Context
+                  </div>
+                  <div class="quick-step-run-all" style="background: #a855f7;" onclick="sendPreset('Retrieve RAG context for query: Prime upgrade refund policy')">
+                    🚀 Run RAG Pipeline
+                  </div>
+                </div>
+
+                <!-- CARD 4 -->
+                <div style="background: #0d1322; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px;">
+                  <div style="font-size: 10.5px; font-weight: 700; color: #f59e0b; margin-bottom: 4px;">💡 Explain MCP</div>
+                  <div class="quick-step-item" onclick="executeQuickStep('MCP Step 1: Explain JSON-RPC tools/list and tools/call specs')">
+                    <span class="quick-step-num">1</span> JSON-RPC Spec
+                  </div>
+                  <div class="quick-step-item" onclick="executeQuickStep('MCP Step 2: Explain Bedrock Converse API tool config format')">
+                    <span class="quick-step-num">2</span> Bedrock Tool Config
+                  </div>
+                  <div class="quick-step-item" onclick="executeQuickStep('MCP Step 3: Explain AWS Lambda serverless execution model')">
+                    <span class="quick-step-num">3</span> Serverless Lambda
+                  </div>
+                  <div class="quick-step-run-all" style="background: #f59e0b; color: #000;" onclick="sendPreset('Explain how Model Context Protocol (MCP) works on AWS Bedrock')">
+                    🚀 Run MCP Explainer
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1419,11 +1406,11 @@
         </div>
       </div>
       <div class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab(this, 'arch')">🗺️ Architecture</button>
-        <button class="tab-btn" onclick="switchTab(this, 'aiml')">🔬 AI/ML Studio &amp; Lab</button>
-        <button class="tab-btn" onclick="switchTab(this, 'jupyter')">📓 Jupyter Lab &amp; ML Studio</button>
-        <button class="tab-btn" onclick="switchTab(this, 'concepts')">💡 Concepts &amp; Services</button>
-        <button class="tab-btn" onclick="switchTab(this, 'code')">💻 Complete Code Inspector</button>
+        <button class="tab-btn active" onclick="switchTab(this, 'arch')">🗺️ Arch</button>
+        <button class="tab-btn" onclick="switchTab(this, 'aiml')">🔬 AI/ML Studio</button>
+        <button class="tab-btn" onclick="switchTab(this, 'jupyter')">📓 Jupyter Lab</button>
+        <button class="tab-btn" onclick="switchTab(this, 'concepts')">💡 Concepts</button>
+        <button class="tab-btn" onclick="switchTab(this, 'code')">💻 Code</button>
       </div>
 
       <!-- TAB 1: ARCHITECTURE SVG DIAGRAM -->
