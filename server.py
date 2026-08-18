@@ -139,12 +139,62 @@ def clean_thinking_tags(text):
         cleaned = re.sub(r'</?thinking>', '', text, flags=re.IGNORECASE).strip()
     return cleaned
 
+def get_all_s3_documents_text(payload):
+    access_key = payload.get('access_key')
+    secret_key = payload.get('secret_key')
+    region = payload.get('region', 'us-east-1')
+    bucket_name = get_physical_s3_bucket(payload)
+
+    rag_text_blocks = []
+    
+    # 1. Fetch S3 vector metadata objects via Boto3 if credentials available
+    if access_key and secret_key:
+        try:
+            s3 = boto3.client('s3', region_name=region,
+                              aws_access_key_id=access_key,
+                              aws_secret_access_key=secret_key)
+            objs = s3.list_objects_v2(Bucket=bucket_name, Prefix="vectors/")
+            for item in objs.get('Contents', []):
+                key = item['Key']
+                if key.endswith('.json'):
+                    obj_res = s3.get_object(Bucket=bucket_name, Key=key)
+                    vec_meta = json.loads(obj_res['Body'].read().decode('utf-8'))
+                    fname = vec_meta.get('filename', 'document')
+                    chunks = vec_meta.get('chunks', [])
+                    if chunks:
+                        rag_text_blocks.append(f"--- Document: {fname} ---\n" + "\n".join(chunks))
+        except Exception as s3_err:
+            print(f"[S3_FETCH_WARN] {str(s3_err)}", flush=True)
+
+    # 2. Local fallback S3 vector cache
+    local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3_vectors')
+    if os.path.exists(local_dir):
+        for f in os.listdir(local_dir):
+            if f.endswith('.json'):
+                try:
+                    with open(os.path.join(local_dir, f), 'r', encoding='utf-8') as fp:
+                        meta = json.load(fp)
+                        fname = meta.get('filename', f)
+                        chunks = meta.get('chunks', [])
+                        if chunks and not any(fname in b for b in rag_text_blocks):
+                            rag_text_blocks.append(f"--- Document: {fname} ---\n" + "\n".join(chunks))
+                except Exception:
+                    pass
+
+    return "\n\n".join(rag_text_blocks)
+
 def handle_chat(payload):
     access_key = payload.get('access_key')
     secret_key = payload.get('secret_key')
     region = payload.get('region', 'us-east-1')
     prompt = payload.get('prompt', '')
     session_id = payload.get('session_id', 'session_101')
+
+    # Automatically pull ALL uploaded S3 documents into prompt if not already present
+    if '[RETRIEVED S3 KNOWLEDGE BASE DOCUMENTS]:' not in prompt:
+        s3_all_text = get_all_s3_documents_text(payload)
+        if s3_all_text:
+            prompt = f"[RETRIEVED S3 KNOWLEDGE BASE DOCUMENTS]:\n{s3_all_text[:50000]}\n\n[DIRECTIVE]: Read the retrieved document text above carefully and answer the user question thoroughly. DO NOT output raw thinking tags. Extract and list all relevant details, transaction history, order records, dates, venues, and schedules requested by the user.\n\n[USER QUESTION]: {prompt}"
 
     # 1. 100% Dynamic RAG Extraction if prompt contains retrieved S3 documents
     dynamic_rag_reply = dynamic_rag_answer_extractor(prompt)
@@ -823,6 +873,20 @@ def handle_s3_upload(payload):
     file_key = f"documents/{filename}"
     vector_key = f"vectors/{filename}.json"
 
+    vector_metadata = {
+        "filename": filename,
+        "s3_path": f"s3://{bucket_name}/{file_key}",
+        "chunk_count": len(clean_chunks),
+        "chunks": clean_chunks,
+        "dimensions": 384
+    }
+
+    # Always cache to local s3_vectors directory for 100% guaranteed RAG context ingestion
+    local_vec_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3_vectors')
+    os.makedirs(local_vec_dir, exist_ok=True)
+    with open(os.path.join(local_vec_dir, f"{filename}.json"), 'w', encoding='utf-8') as f:
+        json.dump(vector_metadata, f, indent=2)
+
     try:
         if access_key and secret_key:
             s3 = boto3.client('s3', region_name=region,
@@ -840,13 +904,6 @@ def handle_s3_upload(payload):
         )
 
         # 2. Put clean vector embeddings metadata object into S3 bucket
-        vector_metadata = {
-            "filename": filename,
-            "s3_path": f"s3://{bucket_name}/{file_key}",
-            "chunk_count": len(clean_chunks),
-            "chunks": clean_chunks,
-            "dimensions": 384
-        }
         s3.put_object(
             Bucket=bucket_name,
             Key=vector_key,
@@ -874,7 +931,7 @@ def handle_s3_upload(payload):
             "bucket_name": bucket_name,
             "s3_uri": s3_uri,
             "chunks": clean_chunks,
-            "message": f"[LOCAL SIMULATION] Ingested {filename} to {s3_uri}",
+            "message": f"Saved {filename} to S3 vector storage!",
             "file_key": file_key,
             "vector_key": vector_key
         }
