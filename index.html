@@ -499,19 +499,20 @@
 
     .preset-pills {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
+      padding: 4px 0;
+      margin-bottom: 4px;
     }
 
     .preset-pill {
-      background: var(--bg-card);
+      background: #090e1a;
       border: 1px solid var(--border-color);
-      color: var(--text-muted);
-      padding: 6px 12px;
+      color: #38bdf8;
+      padding: 5px 11px;
       border-radius: 20px;
-      font-size: 11px;
-      font-weight: 500;
+      font-size: 10.5px;
+      font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.2s ease;
@@ -979,26 +980,17 @@
       </div>
 
       <!-- PRE-CHAT SESSION PERSISTENCE OVERLAY BANNER -->
-      <div id="session-overlay-banner" style="background: linear-gradient(135deg, rgba(8, 12, 22, 0.95), rgba(15, 23, 42, 0.95)); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 10px 14px; background: #060a14;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 14px;">💾</span>
-            <span style="font-size: 11.5px; font-weight: 700; color: #f8fafc; font-family: var(--font-heading);">Session Persistence &amp; DynamoDB Memory Setup</span>
-          </div>
-          <span id="session-persistence-badge" style="font-size: 10px; padding: 2px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">AUTO-SAVE: session_101</span>
+      <div id="session-overlay-banner" style="background: #080d1a; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 240px;">
+          <span style="font-size: 11px; font-weight: 700; color: #f8fafc;">💾 Session Persistence:</span>
+          <input type="text" id="session-id-input" class="form-input" style="width: 110px; padding: 3px 6px; font-size: 10.5px; font-family: var(--font-mono);" value="session_101" onchange="updateActiveSessionId(this.value)">
+          <button class="btn-action" style="padding: 3px 6px; font-size: 10px; background: #334155; color: #fff;" onclick="generateNewSessionId()">+ New</button>
+          <span id="session-persistence-badge" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 700;">AUTO-SAVE: session_101</span>
         </div>
 
-        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
-          <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 200px;">
-            <label style="font-size: 10.5px; color: var(--text-muted); font-weight: 700; font-family: var(--font-mono);">Session ID:</label>
-            <input type="text" id="session-id-input" class="form-input" style="flex: 1; padding: 4px 8px; font-size: 11px; font-family: var(--font-mono);" value="session_101" onchange="updateActiveSessionId(this.value)">
-            <button class="btn-action" style="padding: 4px 8px; font-size: 10.5px; background: #334155; color: #fff;" onclick="generateNewSessionId()">➕ New</button>
-          </div>
-
-          <div style="display: flex; gap: 6px;">
-            <button id="btn-toggle-auto-save" class="btn-action" style="padding: 4px 10px; font-size: 10.5px; background: #10b981; color: #fff;" onclick="toggleAutoSaveSession(true)">✅ Auto-Save Session to DynamoDB</button>
-            <button id="btn-toggle-ephemeral" class="btn-action" style="padding: 4px 10px; font-size: 10.5px; background: #21262d; color: #94a3b8;" onclick="toggleAutoSaveSession(false)">🚫 Ephemeral Mode</button>
-          </div>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button id="btn-toggle-auto-save" class="btn-action" style="padding: 3px 8px; font-size: 10px; background: #10b981; color: #fff;" onclick="toggleAutoSaveSession(true)">✅ Auto-Save</button>
+          <button id="btn-toggle-ephemeral" class="btn-action" style="padding: 3px 8px; font-size: 10px; background: #21262d; color: #94a3b8;" onclick="toggleAutoSaveSession(false)">🚫 Ephemeral</button>
         </div>
       </div>
 
@@ -1225,14 +1217,57 @@
           </div>
         </div>
 
-        <!-- SECTION 2: QLoRA FINE-TUNING & INSTRUCTION TUNING STUIDO -->
+        <!-- SECTION 2: QLoRA FINE-TUNING & INSTRUCTION TUNING STUDIO -->
         <div class="card">
-          <div class="card-title">🎯 2. QLoRA Instruction Fine-Tuning Studio</div>
-          <div class="card-desc" style="margin-bottom:10px;">
-            Input custom instruction-response pairs or load dataset from S3 (<code>s3://agentic-mcp-training-data/custom_dataset.jsonl</code>).
+          <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <span>🎯 2. QLoRA Instruction Fine-Tuning Studio</span>
+            <div style="display: flex; gap: 4px;">
+              <button class="sub-tab-btn active" id="btn-ft-tab-friendly" style="padding: 3px 8px; font-size: 10px;" onclick="switchFinetuneTab('friendly')">✨ Friendly Builder</button>
+              <button class="sub-tab-btn" id="btn-ft-tab-json" style="padding: 3px 8px; font-size: 10px;" onclick="switchFinetuneTab('json')">💻 Raw JSON (Dev)</button>
+            </div>
           </div>
-          <div style="background:#090d16; border:1px solid var(--border-color); border-radius:8px; padding:12px; font-size:11px;">
-            <!-- CUSTOM DATASET EDITOR -->
+          <div class="card-desc" style="margin-bottom:10px;">
+            Teach AI models new behaviors, custom brand tones, or specialized JSON outputs using QLoRA instruction tuning.
+          </div>
+
+          <!-- TAB 1: FRIENDLY INSTRUCTION BUILDER -->
+          <div id="ft-pane-friendly" style="background:#090d16; border:1px solid var(--border-color); border-radius:8px; padding:12px; font-size:11px;">
+            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
+              <div>
+                <label class="form-label" style="font-weight:700; color:#38bdf8;">1. AI System Persona / Behavior Prompt:</label>
+                <input type="text" id="ft-system-prompt" class="form-input" style="width:100%; font-size:11px; padding:6px;" value="You are a helpful customer support bot for Prime Upgrades.">
+              </div>
+              <div>
+                <label class="form-label" style="font-weight:700; color:#38bdf8;">2. User Question / Input Scenario:</label>
+                <input type="text" id="ft-user-input" class="form-input" style="width:100%; font-size:11px; padding:6px;" value="Can I get a refund for my Prime upgrade after 12 hours?">
+              </div>
+              <div>
+                <label class="form-label" style="font-weight:700; color:#38bdf8;">3. Desired Target Model Response (Output):</label>
+                <textarea id="ft-target-output" class="form-input" style="width:100%; height:45px; font-size:11px; padding:6px;">Yes! All Prime upgrades purchased within 24 hours are 100% eligible for instant refund.</textarea>
+              </div>
+            </div>
+
+            <button class="btn-action" style="width:100%; background:#10b981; color:#fff; font-weight:700; padding:8px;" onclick="simulateFriendlyFineTuning()">🚀 Fine-Tune Model with Instruction (Train QLoRA Adapter)</button>
+
+            <!-- BEFORE VS AFTER MODEL OUTPUT VISUALIZER CARD -->
+            <div id="ft-comparison-card" style="margin-top:12px; display:none; background:#040711; border:1px solid var(--border-color); border-radius:8px; padding:10px;">
+              <div style="font-size:11px; font-weight:700; color:#f8fafc; margin-bottom:8px;">📊 Model Output Comparison (Before vs After Fine-Tuning):</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                <div style="background:#0c111d; border:1px solid #ef4444; border-radius:6px; padding:8px;">
+                  <div style="font-size:10px; font-weight:700; color:#ef4444; margin-bottom:4px;">❌ Base Model (Before Tuning):</div>
+                  <div style="font-size:10.5px; color:#cbd5e1; font-family:var(--font-sans);" id="ft-before-text">"I am a general AI assistant. I do not have access to specific company refund policies."</div>
+                </div>
+                <div style="background:#0c111d; border:1px solid #10b981; border-radius:6px; padding:8px;">
+                  <div style="font-size:10px; font-weight:700; color:#10b981; margin-bottom:4px;">✅ QLoRA Adapter (After Tuning):</div>
+                  <div style="font-size:10.5px; color:#34d399; font-family:var(--font-sans);" id="ft-after-text">"Yes! All Prime upgrades purchased within 24 hours are 100% eligible for instant refund."</div>
+                </div>
+              </div>
+              <div style="font-size:9.5px; color:#64748b; margin-top:6px; font-family:var(--font-mono);">Training metrics: 3 Epochs completed in 3.8s | Final Loss: 0.2814 | Adapter Size: 14.2 MB</div>
+            </div>
+          </div>
+
+          <!-- TAB 2: RAW JSON DATASET (DEV MODE) -->
+          <div id="ft-pane-json" style="background:#090d16; border:1px solid var(--border-color); border-radius:8px; padding:12px; font-size:11px; display:none;">
             <div style="margin-bottom:10px;">
               <label class="form-label" style="font-weight:700; color:#38bdf8;">Custom Instruction Dataset (JSON / S3 Path):</label>
               <textarea id="custom-dataset-json" class="form-input" style="width:100%; height:70px; font-family:var(--font-mono); font-size:10px; margin-top:4px;" placeholder="Type custom instruction pairs...">[
@@ -1245,25 +1280,6 @@
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
                 <span style="font-size:10px; color:#64748b;">S3 Bucket Path: <code>s3://agentic-mcp-training-data/custom_dataset.jsonl</code></span>
                 <button class="btn-action" style="font-size:10px; padding:4px 8px; background:#21262d;" onclick="uploadDatasetToS3()">☁️ Upload Dataset to S3</button>
-              </div>
-            </div>
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px;">
-              <div>
-                <label class="form-label">LoRA Rank (r):</label>
-                <input type="text" class="form-input" value="16" readonly style="color:#22d3ee;">
-              </div>
-              <div>
-                <label class="form-label">Target Modules:</label>
-                <input type="text" class="form-input" value="q_proj, v_proj" readonly style="color:#22d3ee;">
-              </div>
-              <div>
-                <label class="form-label">Learning Rate:</label>
-                <input type="text" class="form-input" value="2e-4" readonly style="color:#22d3ee;">
-              </div>
-              <div>
-                <label class="form-label">Training Engine:</label>
-                <input type="text" class="form-input" value="Unsloth / PEFT" readonly style="color:#10b981;">
               </div>
             </div>
             <button class="btn-action" style="width:100%; background:#10b981; color:#fff;" onclick="simulateFineTuning()">🚀 Run QLoRA Fine-Tuning Job (Train Adapter Weights)</button>
@@ -2343,6 +2359,44 @@ def handler(event, context):
       out.innerHTML = `Searching vector space for: "${q}"...\n[1/3] Generated Embedding: [0.0142, -0.0891, 0.4211, ... 384 dims]\n[2/3] FAISS Cosine Distance Computed across 1,240 S3 vector chunks.\n[3/3] Top Match: Chunk #402 (Similarity: 0.941) -> "Prime upgrade purchases within 24h are 100% eligible for instant refund."\n-> Injected Chunk #402 into Bedrock Agent MCP Prompt Context!`;
       addLog('RAG', 'tag-mcp', `Vector search computed 0.941 similarity for "${q}". Context injected.`);
       showToast('RAG Vector Search', 'Computed Cosine Similarity 0.941 & Injected Context', 'success');
+    }
+
+    function switchFinetuneTab(tab) {
+      const btnFriendly = document.getElementById('btn-ft-tab-friendly');
+      const btnJson = document.getElementById('btn-ft-tab-json');
+      const paneFriendly = document.getElementById('ft-pane-friendly');
+      const paneJson = document.getElementById('ft-pane-json');
+
+      if (tab === 'friendly') {
+        if (btnFriendly) btnFriendly.classList.add('active');
+        if (btnJson) btnJson.classList.remove('active');
+        if (paneFriendly) paneFriendly.style.display = 'block';
+        if (paneJson) paneJson.style.display = 'none';
+      } else {
+        if (btnFriendly) btnFriendly.classList.remove('active');
+        if (btnJson) btnJson.classList.add('active');
+        if (paneFriendly) paneFriendly.style.display = 'none';
+        if (paneJson) paneJson.style.display = 'block';
+      }
+    }
+
+    function simulateFriendlyFineTuning() {
+      const sys = document.getElementById('ft-system-prompt').value || 'Customer Service Bot';
+      const usr = document.getElementById('ft-user-input').value || 'Refund policy?';
+      const target = document.getElementById('ft-target-output').value || 'Yes, 100% eligible.';
+
+      showToast('QLoRA Fine-Tuning Initiated', 'Training custom PEFT adapter on SageMaker Spot GPU...', 'info');
+      addLog('FINE-TUNE', 'tag-system', `Started QLoRA training job for instruction: "${usr.substring(0, 40)}..."`);
+
+      setTimeout(() => {
+        const card = document.getElementById('ft-comparison-card');
+        const afterText = document.getElementById('ft-after-text');
+        if (afterText) afterText.innerText = `"${target}"`;
+        if (card) card.style.display = 'block';
+
+        showToast('Fine-Tuning Complete', 'Trained adapter with final loss 0.2814! Compare outputs below.', 'success');
+        addLog('FINE-TUNE OK', 'tag-mcp', 'Adapter training completed. Output visualizer updated.');
+      }, 1200);
     }
 
     function simulateFineTuning() {
