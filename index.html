@@ -1492,6 +1492,7 @@
           <button class="sub-tab-btn" id="btn-arch-m3" onclick="switchArchDiagram('m3')">🎯 Module 3: QLoRA Fine-Tune</button>
           <button class="sub-tab-btn" id="btn-arch-m4" onclick="switchArchDiagram('m4')">🤖 Module 4: SageMaker Endpt</button>
           <button class="sub-tab-btn" id="btn-arch-m5" onclick="switchArchDiagram('m5')">📓 Module 5: Jupyter Studio</button>
+          <button class="sub-tab-btn" id="btn-arch-m6" onclick="switchArchDiagram('m6')">🔄 Module 6: Enterprise MLOps</button>
         </div>
 
         <!-- DIAGRAM CONTAINER M1 -->
@@ -1800,6 +1801,64 @@
             <text x="70" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Export .ipynb</text>
             <text x="70" y="105" fill="#A855F7" font-size="11" font-weight="600" text-anchor="middle">JSON Notebook File</text>
             <text x="70" y="130" fill="#8b949e" font-size="10" text-anchor="middle">1-Click Download</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- DIAGRAM CONTAINER M6: ENTERPRISE MLOPS PIPELINE & AUTOMATED RETRAINING -->
+      <div id="arch-svg-m6" style="display: none;">
+        <svg viewBox="0 0 1000 440" style="width:100%; height:auto; background:#0d1117; border:1px solid var(--border-color); border-radius:10px; padding:6px;">
+          <rect width="1000" height="440" fill="url(#awsBg)" rx="12" stroke="#30363d" stroke-width="2"/>
+          <rect x="30" y="25" width="940" height="65" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+          <text x="50" y="55" fill="#06B6D4" font-size="18" font-weight="800" letter-spacing="0.5">MODULE 6: ENTERPRISE END-TO-END MLOPS PIPELINE &amp; AUTOMATED RETRAINING ARCHITECTURE</text>
+          <text x="50" y="75" fill="#8b949e" font-size="11" font-weight="500">EventBridge Drift Cron ➔ SageMaker Data Prep ➔ QLoRA Spot Retraining ➔ Model Registry ➔ Serverless Endpoint</text>
+
+          <g transform="translate(40, 140)">
+            <rect width="150" height="180" rx="10" fill="#21262d" stroke="#38BDF8" stroke-width="2"/>
+            <text x="75" y="45" fill="#fff" font-size="28" text-anchor="middle">⏰</text>
+            <text x="75" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">AWS EventBridge</text>
+            <text x="75" y="105" fill="#38BDF8" font-size="11" font-weight="600" text-anchor="middle">Drift Cron (7 Days)</text>
+            <text x="75" y="130" fill="#8b949e" font-size="10" text-anchor="middle">Automated Trigger</text>
+          </g>
+
+          <path d="M 190 230 L 230 230" stroke="#38BDF8" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(230, 140)">
+            <rect width="160" height="180" rx="10" fill="#21262d" stroke="#10B981" stroke-width="2"/>
+            <text x="80" y="45" fill="#fff" font-size="28" text-anchor="middle">📦</text>
+            <text x="80" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">SageMaker Data Prep</text>
+            <text x="80" y="105" fill="#10B981" font-size="11" font-weight="600" text-anchor="middle">Processing Job</text>
+            <text x="80" y="130" fill="#8b949e" font-size="10" text-anchor="middle">S3 Training Data</text>
+          </g>
+
+          <path d="M 390 230 L 430 230" stroke="#10B981" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(430, 140)">
+            <rect width="160" height="180" rx="10" fill="#21262d" stroke="#A855F7" stroke-width="2"/>
+            <text x="80" y="45" fill="#fff" font-size="28" text-anchor="middle">🎯</text>
+            <text x="80" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">QLoRA Spot Retrain</text>
+            <text x="80" y="105" fill="#A855F7" font-size="11" font-weight="600" text-anchor="middle">SageMaker Training</text>
+            <text x="80" y="130" fill="#8b949e" font-size="10" text-anchor="middle">Loss Evaluation</text>
+          </g>
+
+          <path d="M 590 230 L 630 230" stroke="#A855F7" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(630, 140)">
+            <rect width="160" height="180" rx="10" fill="#21262d" stroke="#EC4899" stroke-width="2"/>
+            <text x="80" y="45" fill="#fff" font-size="28" text-anchor="middle">🏷️</text>
+            <text x="80" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Model Registry</text>
+            <text x="80" y="105" fill="#EC4899" font-size="11" font-weight="600" text-anchor="middle">Package Group Group</text>
+            <text x="80" y="130" fill="#8b949e" font-size="10" text-anchor="middle">Version v1.2.0</text>
+          </g>
+
+          <path d="M 790 230 L 830 230" stroke="#EC4899" stroke-width="3" marker-end="url(#arrow)"/>
+
+          <g transform="translate(830, 140)">
+            <rect width="140" height="180" rx="10" fill="#21262d" stroke="#06B6D4" stroke-width="2"/>
+            <text x="70" y="45" fill="#fff" font-size="28" text-anchor="middle">🚀</text>
+            <text x="70" y="85" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">Auto-Deploy</text>
+            <text x="70" y="105" fill="#06B6D4" font-size="11" font-weight="600" text-anchor="middle">Serverless Endpt</text>
+            <text x="70" y="130" fill="#8b949e" font-size="10" text-anchor="middle">Zero Idle Cost</text>
           </g>
         </svg>
       </div>
@@ -3013,6 +3072,13 @@ def handler(event, context):
         { icon: '🐍', title: 'Boto3 ML SDK', sub: 'SageMaker / Bedrock SDK', badge: 'LOADED', id: 'mcp' },
         { icon: '▶️', title: 'STDOUT Runner', sub: 'Kernel Cell Execution', badge: '0.34s OK', id: 'lambda' },
         { icon: '📄', title: 'Export .ipynb', sub: 'JSON Notebook Spec', badge: 'EXPORTED', id: 'dynamo' }
+      ],
+      module6: [
+        { icon: '⏰', title: 'AWS EventBridge', sub: 'Drift Cron / 7-Day Rule', badge: 'ENABLED', id: 'gateway' },
+        { icon: '📦', title: 'SageMaker Processing', sub: 'S3 Data Extraction Job', badge: 'INGESTED', id: 'agent' },
+        { icon: '🎯', title: 'Spot Retraining', sub: 'Automated QLoRA Training', badge: 'LOSS 0.28', id: 'mcp' },
+        { icon: '🏷️', title: 'Model Registry', sub: 'Package Group Versioning', badge: 'REGISTERED', id: 'lambda' },
+        { icon: '🚀', title: 'Auto-Deploy', sub: 'Serverless Endpoint Update', badge: 'DEPLOYED', id: 'dynamo' }
       ]
     };
 
@@ -3040,7 +3106,7 @@ def handler(event, context):
       const activeBtn = document.getElementById('btn-arch-' + modKey);
       if (activeBtn) activeBtn.classList.add('active');
 
-      ['m1', 'm2', 'm3', 'm4', 'm5'].forEach(id => {
+      ['m1', 'm2', 'm3', 'm4', 'm5', 'm6'].forEach(id => {
         const svg = document.getElementById('arch-svg-' + id);
         if (svg) svg.style.display = 'none';
       });
@@ -3048,7 +3114,7 @@ def handler(event, context):
       const targetSvg = document.getElementById('arch-svg-' + modKey);
       if (targetSvg) targetSvg.style.display = 'block';
 
-      const modMap = { m1: 'module1', m2: 'module2', m3: 'module3', m4: 'module4', m5: 'module5' };
+      const modMap = { m1: 'module1', m2: 'module2', m3: 'module3', m4: 'module4', m5: 'module5', m6: 'module6' };
       updateActiveModuleNodes(modMap[modKey] || 'module1');
       showToast('Architecture Switch', `Loaded AWS Architecture diagram & active component nodes for ${modKey.toUpperCase()}`, 'info');
     }
@@ -3723,10 +3789,11 @@ def handler(event, context):
       showToast('Suite Deployment Triggered', `Deploying ${count} CloudFormation module stacks via Boto3 SDK...`, 'info');
       addLog('DEPLOY SUITE', 'tag-gateway', `CloudFormation Suite deploy started. Active (${count}/6): ${activeMods.join(', ')}`);
 
-      if (mRag) switchArchDiagram('m2');
-      else if (mFine) switchArchDiagram('m3');
-      else if (mSage) switchArchDiagram('m4');
+      if (mMlOps) switchArchDiagram('m6');
       else if (mJup) switchArchDiagram('m5');
+      else if (mSage) switchArchDiagram('m4');
+      else if (mFine) switchArchDiagram('m3');
+      else if (mRag) switchArchDiagram('m2');
       else switchArchDiagram('m1');
 
       expandCfConsole();
