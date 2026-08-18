@@ -810,9 +810,8 @@
     }
 
     .terminal-logs {
-      flex: 1;
-      height: 0;
-      min-height: 0;
+      height: 250px;
+      max-height: 280px;
       overflow-y: auto !important;
       padding: 14px;
       font-family: var(--font-mono);
@@ -821,23 +820,27 @@
       flex-direction: column;
       gap: 8px;
       scrollbar-width: thin;
-      scrollbar-color: #334155 #0b1120;
+      scrollbar-color: #38bdf8 #0b1120;
     }
 
     .terminal-logs::-webkit-scrollbar {
-      width: 6px;
+      width: 7px;
+      display: block !important;
     }
 
     .terminal-logs::-webkit-scrollbar-track {
       background: #0b1120;
+      border-radius: 4px;
     }
 
     .terminal-logs::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 3px;
+      background: #38bdf8;
+      border-radius: 4px;
     }
 
     .terminal-logs::-webkit-scrollbar-thumb:hover {
+      background: #60a5fa;
+    }
       background: #38bdf8;
     }
 
