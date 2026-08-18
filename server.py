@@ -324,7 +324,8 @@ def handle_deploy(payload):
         'Module 2: Serverless RAG Knowledge Base': 'Module 2 (Serverless RAG Vector KB)',
         'Module 3: QLoRA Fine-Tuning': 'Module 3 (QLoRA Fine-Tuning & Spot Job)',
         'Module 4: SageMaker Serverless Inference': 'Module 4 (SageMaker Serverless Endpoint)',
-        'Module 5: Jupyter Lab Notebooks': 'Module 5 (Interactive Jupyter Lab Notebooks)'
+        'Module 5: Jupyter Lab Notebooks': 'Module 5 (Interactive Jupyter Lab Notebooks)',
+        'Module 6: Enterprise MLOps Pipeline': 'Module 6 (Enterprise MLOps Pipeline & Model Registry)'
     }
 
     try:

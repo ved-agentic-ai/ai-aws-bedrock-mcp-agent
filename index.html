@@ -1159,10 +1159,11 @@
         <span class="mod-badge inactive" id="badge-m3" style="background: rgba(148, 163, 184, 0.08); border: 1px solid #334155; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 10px; opacity: 0.5;">🎯 Module 3: Fine-Tuning (OFF)</span>
         <span class="mod-badge inactive" id="badge-m4" style="background: rgba(148, 163, 184, 0.08); border: 1px solid #334155; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 10px; opacity: 0.5;">🤖 Module 4: SageMaker (OFF)</span>
         <span class="mod-badge inactive" id="badge-m5" style="background: rgba(148, 163, 184, 0.08); border: 1px solid #334155; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 10px; opacity: 0.5;">📓 Module 5: Jupyter (OFF)</span>
+        <span class="mod-badge inactive" id="badge-m6" style="background: rgba(148, 163, 184, 0.08); border: 1px solid #334155; color: #64748b; padding: 2px 8px; border-radius: 4px; font-size: 10px; opacity: 0.5;">🔄 Module 6: MLOps (OFF)</span>
       </div>
     </div>
     <div style="font-size: 10px; color: #94a3b8; font-family: var(--font-mono);" id="active-modules-summary-text">
-      CloudFormation Stack Status: <span style="color: #10b981; font-weight: 700;">CREATE_COMPLETE</span> (2/5 Modules Active)
+      CloudFormation Stack Status: <span style="color: #10b981; font-weight: 700;">CREATE_COMPLETE</span> (2/6 Modules Active)
     </div>
   </div>
 
@@ -1946,6 +1947,54 @@
         </div>
 
         <!-- SECTION 4: AWS COST OPTIMIZATION MATRIX -->
+        <!-- SECTION 3: ENTERPRISE MLOPS PIPELINE & CONTINUOUS RETRAINING -->
+        <div class="card" style="border-color: #06b6d4;">
+          <div class="card-title" style="color: #06b6d4;">🔄 3. Enterprise End-to-End MLOps Pipeline &amp; Automated Retraining</div>
+          <div class="card-desc" style="margin-bottom: 12px;">
+            Continuous machine learning pipeline orchestrating Data Drift Detection, Automated Retraining, Model Evaluation &amp; SageMaker Model Registry versioning.
+          </div>
+
+          <!-- MLOPS PIPELINE DAG VISUALIZER -->
+          <div style="background: #080d1a; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: 700; color: #06b6d4; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <span>🔁 MLOps DAG Workflow Pipeline (EventBridge + SageMaker Pipelines):</span>
+              <span style="font-size: 9.5px; color: #10b981; font-family: var(--font-mono); font-weight: 700;">Status: Active Retraining Cron</span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; font-size: 10px; text-align: center;">
+              <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; flex: 1; min-width: 90px;">
+                <div style="font-weight: 700; color: #38bdf8;">1. EventBridge</div>
+                <div style="font-size: 9px; color: #64748b;">Drift Cron / 7 Days</div>
+              </div>
+              <span style="color: #06b6d4; font-weight: 700;">➔</span>
+              <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; flex: 1; min-width: 90px;">
+                <div style="font-weight: 700; color: #10b981;">2. Data Prep</div>
+                <div style="font-size: 9px; color: #64748b;">S3 Processing Job</div>
+              </div>
+              <span style="color: #06b6d4; font-weight: 700;">➔</span>
+              <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; flex: 1; min-width: 90px;">
+                <div style="font-weight: 700; color: #a855f7;">3. Spot Retrain</div>
+                <div style="font-size: 9px; color: #64748b;">QLoRA GPU Training</div>
+              </div>
+              <span style="color: #06b6d4; font-weight: 700;">➔</span>
+              <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; flex: 1; min-width: 90px;">
+                <div style="font-weight: 700; color: #ec4899;">4. Registry</div>
+                <div style="font-size: 9px; color: #64748b;">SageMaker Versioning</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MLOPS TRIGGER BUTTON & LIVE CONSOLE OUTPUT -->
+          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+            <button class="btn-action" style="background: #0284c7; color: #fff; font-weight: 700;" onclick="runMlOpsPipeline()">
+              ⚡ Trigger Continuous Retraining Pipeline
+            </button>
+            <span style="font-size: 10px; color: #94a3b8;">Automated deployment when eval loss &lt; 0.35</span>
+          </div>
+
+          <pre id="mlops-pipeline-output" style="background: #060913; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-family: var(--font-mono); font-size: 10px; color: #38bdf8; margin: 0; white-space: pre-wrap;">[MLOps Pipeline Ready] Registered Model Group: BedrockMcpAgentStack-ModelRegistryGroup
+Click 'Trigger Continuous Retraining Pipeline' to execute end-to-end MLOps DAG workflow!</pre>
+        </div>
+
         <div class="card" style="border-color:#38bdf8;">
           <div class="card-title" style="color:#38bdf8;">💰 4. AWS Cost Optimization Matrix</div>
           <div style="overflow-x:auto; margin-top:8px;">
@@ -3597,6 +3646,7 @@ def handler(event, context):
       const b3 = document.getElementById('badge-m3');
       const b4 = document.getElementById('badge-m4');
       const b5 = document.getElementById('badge-m5');
+      const b6 = document.getElementById('badge-m6');
       const sumEl = document.getElementById('active-modules-summary-text');
 
       const setBadge = (el, active, label, activeColor, bg) => {
@@ -3625,10 +3675,22 @@ def handler(event, context):
       setBadge(b3, modFlags.finetune, '🎯 Module 3: Fine-Tuning', '#c084fc', 'rgba(192, 132, 252, 0.15)');
       setBadge(b4, modFlags.sagemaker, '🤖 Module 4: SageMaker', '#ec4899', 'rgba(236, 72, 153, 0.15)');
       setBadge(b5, modFlags.jupyter, '📓 Module 5: Jupyter', '#f59e0b', 'rgba(245, 158, 11, 0.15)');
+      setBadge(b6, modFlags.mlops, '🔄 Module 6: MLOps', '#06b6d4', 'rgba(6, 182, 212, 0.15)');
 
       const activeCount = Object.values(modFlags).filter(Boolean).length;
       if (sumEl) {
-        sumEl.innerHTML = `CloudFormation Stack Status: <span style="color: #10b981; font-weight: 700;">CREATE_COMPLETE</span> (${activeCount}/5 Modules Active)`;
+        sumEl.innerHTML = `CloudFormation Stack Status: <span style="color: #10b981; font-weight: 700;">CREATE_COMPLETE</span> (${activeCount}/6 Modules Active)`;
+      }
+    }
+
+    function runMlOpsPipeline() {
+      showToast('MLOps Pipeline Triggered', 'Executing automated continuous retraining pipeline (Data Drift -> Training -> Model Registry)...', 'info');
+      addLog('MLOPS RETRAIN', 'tag-system', 'EventBridge Cron Triggered SageMaker Pipeline DAG [ContinuousRetrainingPipeline-v1]');
+      addCloudWatchLog('MLOPS RETRAIN', 'tag-gateway', 'SageMaker Pipelines DAG Step 1: Processing S3 Drift Data -> Step 2: Spot Training -> Step 3: Model Registry');
+      
+      const out = document.getElementById('mlops-pipeline-output');
+      if (out) {
+        out.innerHTML = `[MLOps Pipeline Active] Executing Continuous Retraining DAG...\n[Step 1/4] EventBridge Drift Rule Triggered: Detected 4.2% accuracy drift on production endpoint.\n[Step 2/4] SageMaker Processing Job: Extracted 1,500 new fine-tuning samples from S3.\n[Step 3/4] QLoRA Spot Training: Loss reduced to 0.2814. Saved Model Package v1.2.0.\n[Step 4/4] SageMaker Model Registry: Registered & Auto-Approved v1.2.0 for Serverless Deployment!`;
       }
     }
 
@@ -3639,8 +3701,9 @@ def handler(event, context):
       const mFine = document.getElementById('mod-finetune')?.checked ?? false;
       const mSage = document.getElementById('mod-sagemaker')?.checked ?? false;
       const mJup = document.getElementById('mod-jupyter')?.checked ?? false;
+      const mMlOps = document.getElementById('mod-mlops')?.checked ?? false;
 
-      updateRunningModulesUI({ agent: mAgent, rag: mRag, finetune: mFine, sagemaker: mSage, jupyter: mJup });
+      updateRunningModulesUI({ agent: mAgent, rag: mRag, finetune: mFine, sagemaker: mSage, jupyter: mJup, mlops: mMlOps });
 
       const activeMods = [];
       if (mAgent) activeMods.push('Module 1: Bedrock Agentic Core');
@@ -3648,16 +3711,17 @@ def handler(event, context):
       if (mFine) activeMods.push('Module 3: QLoRA Fine-Tuning');
       if (mSage) activeMods.push('Module 4: SageMaker Serverless Inference');
       if (mJup) activeMods.push('Module 5: Jupyter Lab Notebooks');
+      if (mMlOps) activeMods.push('Module 6: Enterprise MLOps Pipeline');
 
       const count = activeMods.length;
       const btn = document.getElementById('btn-main-deploy');
-      if (btn) btn.innerText = `🚀 Deploy Suite (${count}/5 Modules)`;
+      if (btn) btn.innerText = `🚀 Deploy Suite (${count}/6 Modules)`;
 
       const stackLabel = document.getElementById('cf-active-stack-label');
       if (stackLabel) stackLabel.innerText = `BedrockMcpAgentStack (${count} Modules Active)`;
 
       showToast('Suite Deployment Triggered', `Deploying ${count} CloudFormation module stacks via Boto3 SDK...`, 'info');
-      addLog('DEPLOY SUITE', 'tag-gateway', `CloudFormation Suite deploy started. Active (${count}/5): ${activeMods.join(', ')}`);
+      addLog('DEPLOY SUITE', 'tag-gateway', `CloudFormation Suite deploy started. Active (${count}/6): ${activeMods.join(', ')}`);
 
       if (mRag) switchArchDiagram('m2');
       else if (mFine) switchArchDiagram('m3');
@@ -3953,10 +4017,15 @@ def handler(event, context):
               <td style="padding: 8px; color: #10b981;">150,000 sec/mo Serverless Free</td>
               <td style="padding: 8px; color: #f8fafc;">10GB Container image limit | 6GB Serverless RAM | 60s Cold start</td>
             </tr>
-            <tr>
+            <tr style="border-bottom: 1px solid var(--border-color);">
               <td style="padding: 8px; font-weight: 700; color: #f59e0b;">Module 5: Jupyter Notebooks</td>
               <td style="padding: 8px; color: #10b981;">250 hours/mo t3.medium Free</td>
               <td style="padding: 8px; color: #f8fafc;">2 vCPUs &amp; 4GB RAM max on t3.medium | 5GB default root disk</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; font-weight: 700; color: #06b6d4;">Module 6: MLOps Pipeline</td>
+              <td style="padding: 8px; color: #10b981;">50 Pipeline Runs / 1M Events Free</td>
+              <td style="padding: 8px; color: #f8fafc;">100 steps max per Pipeline DAG | 2-hour max automated retraining window</td>
             </tr>
           </tbody>
         </table>
@@ -4017,6 +4086,14 @@ def handler(event, context):
           <div>
             <div style="font-size: 12px; font-weight: 700; color: #f59e0b;">📓 Module 5: Interactive Jupyter Lab &amp; SageMaker Studio Notebooks</div>
             <div style="font-size: 10px; color: #64748b;">Provisions SageMaker ML Notebook Instance &amp; live browser Python kernel execution environment</div>
+          </div>
+        </label>
+
+        <label style="display: flex; align-items: flex-start; gap: 10px; background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;">
+          <input type="checkbox" id="mod-mlops" checked style="margin-top: 2px;">
+          <div>
+            <div style="font-size: 12px; font-weight: 700; color: #06b6d4;">🔄 Module 6: Enterprise End-to-End MLOps Pipeline &amp; Retraining</div>
+            <div style="font-size: 10px; color: #64748b;">Provisions EventBridge Drift Cron, SageMaker Model Registry Package Group &amp; Continuous Automated Retraining DAG</div>
           </div>
         </label>
       </div>

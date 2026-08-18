@@ -496,6 +496,37 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${BedrockAgentRuntimeFunction}"
       RetentionInDays: 7
 
+  # =========================================================================
+  # 6. MLOPS & AUTOMATED MODEL RETRAINING PIPELINE LAYER
+  # =========================================================================
+
+  SageMakerModelPackageGroup:
+    Type: AWS::SageMaker::ModelPackageGroup
+    Properties:
+      ModelPackageGroupName: !Sub "${AWS::StackName}-ModelRegistryGroup"
+      ModelPackageGroupDescription: "AWS SageMaker Model Registry for versioned fine-tuned LLaMA 3 PEFT adapters"
+
+  MLOpsPipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+
+  MLOpsScheduledRetrainingRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "${AWS::StackName}-MLOpsRetrainingCron"
+      Description: "EventBridge cron schedule for continuous model retraining and data drift checks"
+      ScheduleExpression: "rate(7 days)"
+      State: ENABLED
+
 Outputs:
   ApiEndpoint:
     Description: "HTTP API Gateway Endpoint URL for AI Agent requests"
@@ -516,3 +547,7 @@ Outputs:
   DynamoDBTableName:
     Description: "Session Memory DynamoDB Table Name"
     Value: !Ref AgentMemoryTable
+
+  SageMakerModelRegistryGroup:
+    Description: "SageMaker Model Registry Package Group Name"
+    Value: !Ref SageMakerModelPackageGroup
