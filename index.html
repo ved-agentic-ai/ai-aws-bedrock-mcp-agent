@@ -577,6 +577,7 @@
       flex: 0 0 36px !important;
       width: 36px !important;
       min-width: 36px !important;
+      max-width: 36px !important;
       overflow: hidden !important;
       background: #060a14 !important;
       border-right: 1px solid var(--border-color);
@@ -584,19 +585,39 @@
       user-select: none;
     }
 
-    .collapsed-strip-content {
-      display: flex;
+    /* Hide all child elements of a column when collapsed except the strip bar */
+    .app-col.collapsed-strip > *:not(.collapsed-strip-bar) {
+      display: none !important;
+    }
+
+    .collapsed-strip-bar {
+      display: none;
+      height: 100%;
+      width: 36px;
+      background: #060a14;
+      border-right: 1px solid var(--border-color);
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
+      padding: 16px 0;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .app-col.collapsed-strip .collapsed-strip-bar {
+      display: flex !important;
+    }
+
+    .collapsed-strip-label {
       writing-mode: vertical-rl;
       transform: rotate(180deg);
-      height: 100%;
-      gap: 12px;
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 1px;
-      color: #94a3b8;
-      padding: 16px 0;
+      letter-spacing: 1.5px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .col-toolbar {
@@ -774,9 +795,13 @@
       overflow-y: auto;
       padding: 20px;
       display: none;
+      min-height: 0;
     }
 
-    .tab-pane.active { display: block; }
+    .tab-pane.active {
+      display: flex !important;
+      flex-direction: column;
+    }
 
     /* SUB TABS FOR CODE INSPECTOR */
     .sub-tab-bar {
@@ -994,6 +1019,10 @@
 
     <!-- LEFT COL: CHAT & AGENTIC PIPELINE -->
     <div class="chat-col app-col">
+      <div class="collapsed-strip-bar" onclick="collapseCol('chat')">
+        <span class="collapsed-strip-label">💬 CHAT &amp; AGENT CONSOLE</span>
+        <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">▶</span>
+      </div>
       <div class="col-toolbar">
         <div class="col-title">💬 Chat &amp; Live Agent Console</div>
         <div class="col-controls">
@@ -1135,6 +1164,10 @@
 
     <!-- MIDDLE COL: DUAL LOG STREAMS PANEL (PROTOCOL EVENTS + CLOUDWATCH) -->
     <div class="terminal-col app-col" style="display:flex; flex-direction:column;">
+      <div class="collapsed-strip-bar" onclick="collapseCol('logs')">
+        <span class="collapsed-strip-label">📜 PROTOCOL &amp; CLOUDWATCH LOGS</span>
+        <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">▶</span>
+      </div>
       <div class="col-toolbar">
         <div class="col-title">📜 Realtime Protocol &amp; CloudWatch Logs</div>
         <div class="col-controls">
@@ -1186,6 +1219,10 @@
 
     <!-- RIGHT COL: INSPECTOR & ARCHITECTURE TABS -->
     <div class="inspector-col app-col">
+      <div class="collapsed-strip-bar" onclick="collapseCol('inspector')">
+        <span class="collapsed-strip-label">🔬 ARCHITECTURE &amp; AI/ML STUDIO</span>
+        <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">◀</span>
+      </div>
       <div class="col-toolbar">
         <div class="col-title">🔬 Architecture, AI/ML Studio &amp; Labs</div>
         <div class="col-controls">
