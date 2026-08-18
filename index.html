@@ -2776,8 +2776,8 @@ def handler(event, context):
           const docContent = doc.chunks && doc.chunks.length > 0 ? doc.chunks.join('\n') : (doc.text || doc.filename);
           ragContextText += `--- Document: ${doc.filename} ---\n${docContent}\n\n`;
         });
-        augmentedPrompt = `[RETRIEVED S3 KNOWLEDGE BASE DOCUMENTS]:\n${ragContextText.substring(0, 3500)}\n\n[USER QUESTION]: ${text}`;
-        addLog('RAG INGEST', 'tag-mcp', `Retrieved ${window.RAG_DOCUMENTS.length} S3 document(s) -> Injected full text into Bedrock Agent context!`);
+        augmentedPrompt = `[RETRIEVED S3 KNOWLEDGE BASE DOCUMENTS]:\n${ragContextText.substring(0, 25000)}\n\n[DIRECTIVE]: Read the retrieved document text above carefully and answer the user question thoroughly. Extract and list all relevant details, speakers, participants, dates, venues, and schedules requested by the user.\n\n[USER QUESTION]: ${text}`;
+        addLog('RAG INGEST', 'tag-mcp', `Retrieved ${window.RAG_DOCUMENTS.length} S3 document(s) -> Injected full text (${ragContextText.length} chars) into Bedrock Agent context!`);
         addCloudWatchLog('RAG VECTOR', 'tag-mcp', `FAISS Cosine Distance 0.941 on S3 document knowledge base.`);
       }
 

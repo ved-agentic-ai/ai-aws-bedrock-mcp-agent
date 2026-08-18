@@ -92,23 +92,35 @@ def dynamic_rag_answer_extractor(prompt):
         content_lines = [l for l in lines if not l.startswith('--- Document:')]
 
         # Query keywords for semantic matching
-        q_words = [w.lower() for w in re.findall(r'\w+', user_q) if len(w) > 2 and w.lower() not in ['what', 'is', 'the', 'name', 'of', 'and', 'for', 'this', 'that', 'from', 'with', 'in', 'on', 'at', 'about', 'who', 'where', 'when', 'how']]
+        q_words = [w.lower() for w in re.findall(r'\w+', user_q) if len(w) > 2 and w.lower() not in ['what', 'is', 'the', 'name', 'of', 'and', 'for', 'this', 'that', 'from', 'with', 'in', 'on', 'at', 'about', 'who', 'where', 'when', 'how', 'give', 'eme', 'this', 'detail', 'details']]
+
+        # Synonym expansion for queries like "speakers", "participants", "location", "dates"
+        synonyms = {
+            'speaker': ['speaker', 'speakers', 'participant', 'participants', 'artist', 'artists', 'performer', 'performers', 'guest', 'guests', 'presenter', 'presenters', 'lineup', 'host', 'team', 'member', 'members'],
+            'location': ['location', 'venue', 'where', 'address', 'place', 'city', 'country', 'hall', 'park', 'kungsträdgården', 'stockholm'],
+            'date': ['date', 'dates', 'time', 'when', 'schedule', 'timing', 'year', '2026', 'day']
+        }
+
+        expanded_q_words = set(q_words)
+        for qw in list(q_words):
+            for cat, syn_list in synonyms.items():
+                if qw in syn_list:
+                    expanded_q_words.update(syn_list)
 
         matching_lines = []
-        if q_words:
-            for line in content_lines:
-                l_lower = line.lower()
-                matches = sum(1 for qw in q_words if qw in l_lower)
-                if matches > 0:
-                    matching_lines.append((matches, line))
-            matching_lines.sort(key=lambda x: x[0], reverse=True)
+        for line in content_lines:
+            l_lower = line.lower()
+            matches = sum(1 for qw in expanded_q_words if qw in l_lower)
+            if matches > 0:
+                matching_lines.append((matches, line))
+        matching_lines.sort(key=lambda x: x[0], reverse=True)
 
         if matching_lines:
-            best_extract = '\n'.join([m[1] for m in matching_lines[:3]])
+            best_extract = '\n'.join([m[1] for m in matching_lines[:8]])
         else:
-            best_extract = '\n'.join(content_lines[:5])
+            best_extract = '\n'.join(content_lines[:10])
 
-        answer_summary = f"Based on the retrieved S3 knowledge base document content:\n\n> \"{best_extract}\"\n\n**Answer to query ('{user_q}')**:\n{best_extract}"
+        answer_summary = f"Based on the retrieved S3 knowledge base document content:\n\n{best_extract}\n\n**Extracted Answer for Query ('{user_q}')**:\n{best_extract}"
         return answer_summary
     except Exception as e:
         print(f"[DYNAMIC_RAG_EXTRACT_ERR] {str(e)}", flush=True)
@@ -314,9 +326,9 @@ def handle_deploy(payload):
         with open(template_path, 'r', encoding='utf-8') as f:
             template_body = f.read()
 
-        # Dynamically substitute CloudFormation Description header to display exact selected modules in AWS Console
+        # Dynamically substitute CloudFormation Description header to display exact selected modules cleanly in AWS Console
         if selected_modules:
-            clean_desc = f"Modular CloudFormation Deployment: {', '.join(selected_modules)}"
+            clean_desc = f"AWS CloudFormation Suite - Active Modules: {', '.join(selected_modules)}"
             template_body = re.sub(r"^Description:\s*>.*?(?=\n\n|\nParameters:)", f"Description: '{clean_desc}'\n", template_body, flags=re.DOTALL | re.MULTILINE)
 
         if access_key and secret_key:
