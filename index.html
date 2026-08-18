@@ -859,20 +859,25 @@
       background: #090e1a;
       border-bottom: 1px solid var(--border-color);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      overflow-x: auto;
     }
 
     .tab-btn {
-      flex: 1;
-      padding: 12px 10px;
+      flex: 1 1 0%;
+      min-width: 60px;
+      padding: 10px 4px;
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 700;
       font-family: var(--font-heading);
       cursor: pointer;
       border-bottom: 2px solid transparent;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      text-align: center;
     }
 
     .tab-btn.active {
@@ -1742,9 +1747,10 @@
           </g>
         </svg>
       </div>
+    </div>
 
-      <!-- TAB 2: AI/ML STUDIO & LAB (RAG, FINE-TUNING & CUSTOM MODEL HOSTING) -->
-      <div class="tab-pane" id="pane-aiml">
+    <!-- TAB 2: AI/ML STUDIO & LAB (RAG, FINE-TUNING & CUSTOM MODEL HOSTING) -->
+    <div class="tab-pane" id="pane-aiml">
         <h3 style="font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">🔬 AI/ML Engineering Studio &amp; Lab</h3>
         <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px;">
           Interactive laboratory for RAG Vector Search, QLoRA Fine-Tuning, Custom Model Serving, and AWS Cost Optimization.
