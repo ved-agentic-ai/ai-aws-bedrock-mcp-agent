@@ -318,7 +318,14 @@ def handle_deploy(payload):
     model_id = payload.get('model_id', 'us.amazon.nova-micro-v1:0')
     selected_modules = payload.get('selected_modules', [])
 
-    module_desc = f"Selected Suite Modules: {', '.join(selected_modules)}" if selected_modules else "All 5 Suite Modules Active"
+    # Map module names dynamically for AWS Console CloudFormation Description
+    MODULE_DESCRIPTIONS = {
+        'Module 1: Bedrock Agentic Core': 'Module 1 (Bedrock Core & MCP Server)',
+        'Module 2: Serverless RAG Knowledge Base': 'Module 2 (Serverless RAG Vector KB)',
+        'Module 3: QLoRA Fine-Tuning': 'Module 3 (QLoRA Fine-Tuning & Spot Job)',
+        'Module 4: SageMaker Serverless Inference': 'Module 4 (SageMaker Serverless Endpoint)',
+        'Module 5: Jupyter Lab Notebooks': 'Module 5 (Interactive Jupyter Lab Notebooks)'
+    }
 
     try:
         dir_path = os.path.dirname(os.path.abspath(__file__))
@@ -326,9 +333,10 @@ def handle_deploy(payload):
         with open(template_path, 'r', encoding='utf-8') as f:
             template_body = f.read()
 
-        # Dynamically substitute CloudFormation Description header to display exact selected modules cleanly in AWS Console
+        # Dynamically substitute CloudFormation Description header to display exact selected modules in AWS Console
         if selected_modules:
-            clean_desc = f"AWS CloudFormation Suite - Active Modules: {', '.join(selected_modules)}"
+            formatted_mods = [MODULE_DESCRIPTIONS.get(m, m) for m in selected_modules]
+            clean_desc = f"AWS CloudFormation Suite - Active Modules: {', '.join(formatted_mods)}"
             template_body = re.sub(r"^Description:\s*>.*?(?=\n\n|\nParameters:)", f"Description: '{clean_desc}'\n", template_body, flags=re.DOTALL | re.MULTILINE)
 
         if access_key and secret_key:
