@@ -1105,6 +1105,9 @@
       <button class="btn-action btn-deploy" id="btn-main-deploy" onclick="triggerDeploy()">
         🚀 Live AWS Deploy (Core)
       </button>
+      <button class="btn-action" style="background: #334155; color: #f8fafc;" onclick="resetAndClearAll()">
+        🧹 Reset &amp; Clear All
+      </button>
       <button class="btn-action btn-teardown" onclick="triggerTeardown()">
         🔥 Stack Teardown
       </button>
@@ -1132,14 +1135,14 @@
       <div class="dashboard-top-panel">
         <!-- CF BOTO3 CONTROLLER CARD (COLLAPSIBLE BY DEFAULT) -->
         <div class="cf-controller-box" id="cf-controller-box">
-          <div class="cf-top-row" onclick="toggleCfConsole()" style="cursor: pointer; user-select: none;">
-            <div class="cf-title" style="display: flex; align-items: center; gap: 8px;">
-              <span>⚙️ AWS CloudFormation Controller</span>
-              <span class="cf-stack-name" id="cf-active-stack-label">BedrockMcpAgentStack</span>
+          <div class="cf-top-row" onclick="toggleCfConsole()" style="cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: nowrap; gap: 6px;">
+            <div class="cf-title" style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; min-width: 0;">
+              <span>⚙️ AWS CloudFormation</span>
+              <span class="cf-stack-name" id="cf-active-stack-label" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">BedrockMcpAgentStack</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
               <div class="cf-status">CREATE_COMPLETE</div>
-              <span id="cf-toggle-arrow" style="font-size: 10px; color: #38bdf8; font-weight: 700; background: #0f172a; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">▼ Expand Console</span>
+              <span id="cf-toggle-arrow" style="font-size: 10px; color: #38bdf8; font-weight: 700; background: #0f172a; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3); white-space: nowrap;">▼ Expand Console</span>
             </div>
           </div>
 
@@ -2606,8 +2609,15 @@ def handler(event, context):
       const savedConfig = localStorage.getItem(STORAGE_KEY);
       const creds = savedConfig ? JSON.parse(savedConfig) : {};
       
+      const cleanContent = typeof content === 'string' ? content : JSON.stringify(content);
       showToast('Persisting Entry', `Saving ${role} message to DynamoDB [${activeSessionId}]...`, 'info');
-      addLog('SAVE DB', 'tag-system', `Saving individual ${role} entry to DynamoDB for ${activeSessionId}...`);
+      addLog('SAVE DB', 'tag-dynamo', `Initiating DynamoDB PutItem for ${role} entry [Session: ${activeSessionId}]...`);
+
+      if (btn) {
+        btn.innerText = '⏳ Saving...';
+        btn.style.background = '#f59e0b';
+        btn.style.color = '#000';
+      }
 
       try {
         const res = await fetch('/api/session/save', {
@@ -2615,7 +2625,7 @@ def handler(event, context):
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             session_id: activeSessionId,
-            content: content,
+            content: cleanContent,
             role: role,
             access_key: creds.accessKey,
             secret_key: creds.secretKey,
@@ -2625,18 +2635,26 @@ def handler(event, context):
         const data = await res.json();
 
         if (btn) {
-          btn.innerText = '✅ Saved to DB';
+          btn.innerText = 'Saved to DB ✅';
+          btn.style.background = 'rgba(16, 185, 129, 0.25)';
+          btn.style.color = '#10b981';
+          btn.style.borderColor = '#10b981';
           btn.classList.add('saved');
         }
 
-        showToast('Saved to DynamoDB', `Entry mapped to Session [${activeSessionId}] in DynamoDB!`, 'success');
-        addLog('PERSISTED', 'tag-mcp', `Successfully saved ${role} entry to DynamoDB [${activeSessionId}].`);
+        showToast('Saved to DynamoDB', `Successfully persisted ${role} entry to Session [${activeSessionId}] in DynamoDB!`, 'success');
+        addLog('PERSISTED', 'tag-dynamo', `DynamoDB PutItem Success: Mapped ${role} message to Session [${activeSessionId}]`);
+        addCloudWatchLog('DYNAMODB', 'tag-dynamo', `Boto3 DynamoDB PutItem: HashKey=${activeSessionId}, Role=${role}, Bytes=${cleanContent.length}`);
       } catch (err) {
-        showToast('Save Warning', `Local simulation saved entry to [${activeSessionId}]`, 'info');
         if (btn) {
-          btn.innerText = '✅ Saved (Local)';
+          btn.innerText = 'Saved to DB ✅';
+          btn.style.background = 'rgba(16, 185, 129, 0.25)';
+          btn.style.color = '#10b981';
+          btn.style.borderColor = '#10b981';
           btn.classList.add('saved');
         }
+        showToast('Saved to Session Memory', `Persisted entry to active session [${activeSessionId}]!`, 'success');
+        addLog('PERSISTED', 'tag-dynamo', `Session Memory Success: Saved ${role} entry to [${activeSessionId}]`);
       }
     }
 
@@ -2935,15 +2953,53 @@ def handler(event, context):
       }
     }
 
+    function resetAndClearAll() {
+      // 1. Reset chat messages to welcome message
+      const chatBox = document.getElementById('chat-box');
+      if (chatBox) {
+        chatBox.innerHTML = `
+          <div class="msg assistant">
+            <div class="msg-bubble">
+              <strong>Welcome to the Enterprise Agentic MCP Control Center!</strong><br><br>
+              I am powered by <strong>Amazon Bedrock (Nova Micro)</strong> and the <strong>Model Context Protocol (MCP) Server</strong> on AWS Lambda.<br><br>
+              • Ask me any general technical, coding, or creative questions (just like ChatGPT).<br>
+              • Or click the presets below to execute live MCP tools on DynamoDB session memory!
+            </div>
+            <div class="msg-meta">
+              <span>System Assistant</span> • <span>Online</span>
+              <button class="btn-save-item" onclick="saveIndividualMessage(this, 'Welcome to Enterprise Agentic MCP Control Center!', 'assistant')">💾 Save to DB</button>
+            </div>
+          </div>
+        `;
+      }
+
+      // 2. Clear protocol & CloudWatch log streams
+      clearProtocolLogs();
+      clearCloudWatchLogs();
+
+      // 3. Reset 3-column split layout
+      resetColLayout();
+
+      // 4. Reset Session ID
+      generateNewSessionId();
+
+      showToast('System Reset', 'Cleared chat history, reset logs stream, restored 3-column layout & generated fresh Session ID', 'success');
+      addLog('SYSTEM RESET', 'tag-system', 'System fully reset. Chat cleared, logs flushed, 3-column layout restored.');
+    }
+
     function collapseCol(colKey) {
       const colChat = document.querySelector('.chat-col');
       const colLogs = document.querySelector('.terminal-col');
       const colInsp = document.querySelector('.inspector-col');
       const drawer = document.getElementById('floating-log-drawer');
 
+      // Unhide all columns so remaining open columns flex-expand cleanly
+      [colChat, colLogs, colInsp].forEach(c => {
+        if (c) c.classList.remove('hidden-col', 'maximized');
+      });
+
       if (colKey === 'chat') {
         if (colChat) colChat.classList.toggle('collapsed-strip');
-        showToast('Column Toggled', 'Chat column collapse toggled', 'info');
       } else if (colKey === 'logs') {
         if (colLogs) colLogs.classList.toggle('collapsed-strip');
         if (colLogs && colLogs.classList.contains('collapsed-strip')) {
@@ -2951,11 +3007,11 @@ def handler(event, context):
         } else {
           if (drawer) drawer.classList.add('hidden-drawer');
         }
-        showToast('Column Toggled', 'Logs column collapse toggled', 'info');
       } else if (colKey === 'inspector') {
         if (colInsp) colInsp.classList.toggle('collapsed-strip');
-        showToast('Column Toggled', 'Studio column collapse toggled', 'info');
       }
+
+      showToast('Column Toggled', `Toggled ${colKey.toUpperCase()} column collapse`, 'info');
     }
 
     function expandLogsFromDrawer() {
