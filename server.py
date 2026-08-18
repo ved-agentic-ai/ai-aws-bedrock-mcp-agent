@@ -27,6 +27,16 @@ def app(environ, start_response):
         ])
         return [content]
 
+    if path == '/api/s3/documents':
+        res_data = handle_s3_documents_list({})
+        body_bytes = json.dumps(res_data).encode('utf-8')
+        start_response('200 OK', [
+            ('Content-Type', 'application/json; charset=utf-8'),
+            ('Content-Length', str(len(body_bytes))),
+            ('Access-Control-Allow-Origin', '*')
+        ])
+        return [body_bytes]
+
     if method == 'POST':
         try:
             content_length = int(environ.get('CONTENT_LENGTH', 0))
@@ -53,6 +63,8 @@ def app(environ, start_response):
             res_data = handle_s3_bucket(payload)
         elif path == '/api/s3/upload':
             res_data = handle_s3_upload(payload)
+        elif path == '/api/s3/documents':
+            res_data = handle_s3_documents_list(payload)
         else:
             res_data = {"error": "Not Found"}
 
@@ -935,6 +947,27 @@ def handle_s3_upload(payload):
             "file_key": file_key,
             "vector_key": vector_key
         }
+
+def handle_s3_documents_list(payload):
+    docs = []
+    local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3_vectors')
+    if os.path.exists(local_dir):
+        for f in os.listdir(local_dir):
+            if f.endswith('.json'):
+                try:
+                    with open(os.path.join(local_dir, f), 'r', encoding='utf-8') as fp:
+                        meta = json.load(fp)
+                        fname = meta.get('filename', f)
+                        chunks = meta.get('chunks', [])
+                        docs.append({
+                            "filename": fname,
+                            "chunk_count": len(chunks),
+                            "s3_path": meta.get('s3_path', f"s3://agentic-mcp-knowledge-base/documents/{fname}"),
+                            "sample_text": chunks[0][:150] if chunks else ""
+                        })
+                except Exception:
+                    pass
+    return {"status": "success", "documents": docs, "total": len(docs)}
 
 if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
