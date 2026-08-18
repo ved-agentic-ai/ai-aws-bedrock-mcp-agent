@@ -739,6 +739,43 @@
     .col-controls {
       display: flex;
       gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .splitter-resizer {
+      width: 6px;
+      height: 100%;
+      background: #0d1527;
+      border-left: 1px solid rgba(255, 255, 255, 0.05);
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: col-resize;
+      position: relative;
+      user-select: none;
+      z-index: 20;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .splitter-resizer::after {
+      content: '⋮';
+      color: #38bdf8;
+      font-size: 13px;
+      font-weight: bold;
+      opacity: 0.4;
+      transition: opacity 0.2s ease;
+    }
+
+    .splitter-resizer:hover, .splitter-resizer.is-dragging {
+      background: #38bdf8;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
+    }
+
+    .splitter-resizer:hover::after, .splitter-resizer.is-dragging::after {
+      opacity: 1;
+      color: #040711;
     }
 
     .btn-col-ctl {
@@ -1429,6 +1466,9 @@
       </div>
     </div>
 
+    <!-- RESIZER 1 (CHAT VS LOGS) -->
+    <div class="splitter-resizer" id="resizer-1" title="Drag left/right to adjust Chat vs Logs column width"></div>
+
     <!-- MIDDLE COL: DUAL LOG STREAMS PANEL (PROTOCOL EVENTS + CLOUDWATCH) -->
     <div class="terminal-col app-col" style="display:flex; flex-direction:column;">
       <div class="collapsed-strip-bar" onclick="collapseCol('logs')">
@@ -1483,6 +1523,9 @@
         </div>
       </div>
     </div>
+
+    <!-- RESIZER 2 (LOGS VS ARCHITECTURE) -->
+    <div class="splitter-resizer" id="resizer-2" title="Drag left/right to adjust Logs vs Architecture column width"></div>
 
     <!-- RIGHT COL: INSPECTOR & ARCHITECTURE TABS -->
     <div class="inspector-col app-col">
@@ -3227,6 +3270,7 @@ def handler(event, context):
 
     window.addEventListener('DOMContentLoaded', () => {
       loadActiveRagDocuments();
+      initColumnResizers();
     });
 
     const MODULE_NODES_CONFIG = {
@@ -3327,7 +3371,8 @@ def handler(event, context):
       const colChat = document.querySelector('.chat-col');
       const colLogs = document.querySelector('.terminal-col');
       const colInsp = document.querySelector('.inspector-col');
-      const drawer = document.getElementById('floating-log-drawer');
+      const resizer1 = document.getElementById('resizer-1');
+      const resizer2 = document.getElementById('resizer-2');
 
       [colChat, colLogs, colInsp].forEach(c => {
         if (c) {
@@ -3336,12 +3381,75 @@ def handler(event, context):
         }
       });
 
-      if (colChat) colChat.style.flex = '1.2 1 0%';
-      if (colLogs) colLogs.style.flex = '0.9 1 0%';
+      if (colChat) colChat.style.flex = '1.1 1 0%';
+      if (colLogs) colLogs.style.flex = '1.0 1 0%';
       if (colInsp) colInsp.style.flex = '1.1 1 0%';
 
-      if (drawer) drawer.classList.add('hidden-drawer');
-      showToast('Layout Restored', 'Restored 3-Column Split View', 'info');
+      if (resizer1) resizer1.style.display = 'flex';
+      if (resizer2) resizer2.style.display = 'flex';
+
+      showToast('Layout Restored', 'Restored 3-Column Split View to default widths (1.1 : 1.0 : 1.1)', 'info');
+    }
+
+    function initColumnResizers() {
+      const container = document.querySelector('.app-container');
+      const chatCol = document.querySelector('.chat-col');
+      const termCol = document.querySelector('.terminal-col');
+      const inspCol = document.querySelector('.inspector-col');
+      const resizer1 = document.getElementById('resizer-1');
+      const resizer2 = document.getElementById('resizer-2');
+
+      if (!container || !chatCol || !termCol || !inspCol || !resizer1 || !resizer2) return;
+
+      let isDragging1 = false;
+      let isDragging2 = false;
+
+      resizer1.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isDragging1 = true;
+        resizer1.classList.add('is-dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      resizer2.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isDragging2 = true;
+        resizer2.classList.add('is-dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging1 && !isDragging2) return;
+
+        const rect = container.getBoundingClientRect();
+        const totalW = rect.width;
+
+        if (isDragging1) {
+          const chatW = Math.max(180, Math.min(totalW - 350, e.clientX - rect.left));
+          const chatPct = (chatW / totalW) * 100;
+          chatCol.style.flex = `0 0 ${chatPct}%`;
+        } else if (isDragging2) {
+          const chatW = chatCol.getBoundingClientRect().width;
+          const remainingW = totalW - chatW;
+          const termW = Math.max(180, Math.min(remainingW - 180, e.clientX - rect.left - chatW));
+          const termPct = (termW / totalW) * 100;
+          termCol.style.flex = `0 0 ${termPct}%`;
+          inspCol.style.flex = `1 1 0%`;
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging1 || isDragging2) {
+          isDragging1 = false;
+          isDragging2 = false;
+          resizer1.classList.remove('is-dragging');
+          resizer2.classList.remove('is-dragging');
+          document.body.style.cursor = 'default';
+          document.body.style.userSelect = 'auto';
+        }
+      });
     }
 
     function maximizeCol(colKey) {
