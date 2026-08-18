@@ -549,20 +549,46 @@ def extract_clean_text_from_file(filename, content_str, file_b64=None):
     if file_b64:
         try:
             raw_bytes = base64.b64decode(file_b64)
-            matches = re.findall(rb'[A-Za-z0-9\s.,?!:;\'"()\-_]{4,}', raw_bytes)
+
+            # 1. Decompress zlib streams in PDF (stream ... endstream)
+            import zlib
+            stream_matches = re.findall(rb'stream[\r\n]+(.*?)[\r\n]+endstream', raw_bytes, re.DOTALL)
+            for sm in stream_matches:
+                try:
+                    decomp = zlib.decompress(sm)
+                    text_parts = re.findall(r'\((.*?)\)|\[(.*?)\]', decomp.decode('latin1', errors='ignore'))
+                    for tp in text_parts:
+                        t = (tp[0] or tp[1]).strip()
+                        if len(t) > 2 and not t.startswith('/'):
+                            clean_lines.append(t)
+                except Exception:
+                    pass
+
+            # 2. Fallback string extraction across entire binary stream
+            matches = re.findall(rb'[A-Za-z0-9\s.,?!:;\'"()\-_]{3,}', raw_bytes)
             extracted_strings = [m.decode('utf-8', errors='ignore').strip() for m in matches]
-            clean_lines = [s for s in extracted_strings if len(s) > 4 and not any(k in s.lower() for k in ['/type', '/font', '/filter', '/length', 'endstream', 'endobj', '%pdf'])]
-        except Exception:
-            clean_lines = []
+            for s in extracted_strings:
+                if len(s) > 3 and not any(k in s.lower() for k in ['/type', '/font', '/filter', '/length', 'endstream', 'endobj', '%pdf', 'mediabox', 'fontdescriptor']):
+                    clean_lines.append(s)
 
-    if not clean_lines and content_str:
-        lines = [l.strip() for l in content_str.split('\n') if len(l.strip()) > 0]
-        clean_lines = [l for l in lines if not l.lower().startswith(('%pdf', 'endstream', 'endobj'))]
+        except Exception as e:
+            print(f"[PDF_EXTRACT_WARN] {str(e)}", flush=True)
 
-    if not clean_lines:
-        clean_lines = [f"Ingested document content for {filename}"]
+    # Clean filename as explicit title hint if empty
+    filename_title = filename.replace('_', ' ').replace('-', ' ').replace('.pdf', '').replace('.docx', '').replace('.txt', '')
+    clean_lines.insert(0, f"Document Name / Title: {filename_title}")
+    clean_lines.insert(1, f"Event Name: {filename_title}")
 
-    return clean_lines
+    # Remove duplicates preserving order
+    seen = set()
+    deduped = []
+    for line in clean_lines:
+        l_str = line.strip()
+        if l_str and l_str not in seen:
+            seen.add(l_str)
+            deduped.append(l_str)
+
+    return deduped if len(deduped) > 0 else [f"Document content for {filename_title}"]
 
 def handle_s3_upload(payload):
     access_key = payload.get('access_key')
