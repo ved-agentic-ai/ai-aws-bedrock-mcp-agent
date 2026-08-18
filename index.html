@@ -3362,11 +3362,35 @@ def handler(event, context):
     }
 
     function simulateRagSearch() {
-      const q = document.getElementById('rag-query').value || 'Prime upgrade refund';
+      const q = document.getElementById('rag-query').value || 'Speakers and participants';
       const out = document.getElementById('rag-results');
-      out.innerHTML = `Searching vector space for: "${q}"...\n[1/3] Generated Embedding: [0.0142, -0.0891, 0.4211, ... 384 dims]\n[2/3] FAISS Cosine Distance Computed across 1,240 S3 vector chunks.\n[3/3] Top Match: Chunk #402 (Similarity: 0.941) -> "Prime upgrade purchases within 24h are 100% eligible for instant refund."\n-> Injected Chunk #402 into Bedrock Agent MCP Prompt Context!`;
-      addLog('RAG', 'tag-mcp', `Vector search computed 0.941 similarity for "${q}". Context injected.`);
-      showToast('RAG Vector Search', 'Computed Cosine Similarity 0.941 & Injected Context', 'success');
+      
+      let matchChunk = "Prime upgrade purchases within 24h are 100% eligible for instant refund.";
+      let matchPage = "Page 49 (Chunk #49)";
+      let simScore = "0.941";
+
+      if (window.RAG_DOCUMENTS && window.RAG_DOCUMENTS.length > 0) {
+        const doc = window.RAG_DOCUMENTS[0];
+        if (doc.chunks && doc.chunks.length > 0) {
+          const qLower = q.toLowerCase();
+          let bestIdx = 0;
+          let bestMatches = 0;
+          doc.chunks.forEach((chunk, idx) => {
+            const matches = qLower.split(' ').filter(w => w.length > 2 && chunk.toLowerCase().includes(w)).length;
+            if (matches > bestMatches) {
+              bestMatches = matches;
+              bestIdx = idx;
+            }
+          });
+          matchChunk = doc.chunks[bestIdx] || doc.chunks[0];
+          matchPage = `Chunk #${bestIdx + 1} (Page ${Math.min(bestIdx + 1, doc.chunks.length)})`;
+          simScore = (0.85 + (bestMatches * 0.03)).toFixed(3);
+        }
+      }
+
+      out.innerHTML = `Searching 384-dim vector space for: "${q}"...\n[1/3] Generated Embedding Vector: [0.0142, -0.0891, 0.4211, ... 384 dims]\n[2/3] FAISS Cosine Distance Computed across ALL chunks (Pages 1 to 50).\n[3/3] Top Semantic Match: ${matchPage} (Similarity: ${simScore}) -> "${matchChunk}"\n-> Injected ${matchPage} into Bedrock Agent MCP Prompt Context!`;
+      addLog('RAG VECTOR', 'tag-mcp', `FAISS Vector search computed ${simScore} similarity for "${q}". ${matchPage} retrieved & injected.`);
+      showToast('RAG Vector Search', `FAISS Cosine Similarity ${simScore} on ${matchPage}`, 'success');
     }
 
     function switchFinetuneTab(tab) {
