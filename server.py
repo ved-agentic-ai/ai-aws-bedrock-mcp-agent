@@ -94,11 +94,12 @@ def dynamic_rag_answer_extractor(prompt):
         # Query keywords for semantic matching
         q_words = [w.lower() for w in re.findall(r'\w+', user_q) if len(w) > 2 and w.lower() not in ['what', 'is', 'the', 'name', 'of', 'and', 'for', 'this', 'that', 'from', 'with', 'in', 'on', 'at', 'about', 'who', 'where', 'when', 'how', 'give', 'eme', 'this', 'detail', 'details']]
 
-        # Synonym expansion for queries like "speakers", "participants", "location", "dates"
+        # Synonym expansion for queries like "speakers", "participants", "location", "dates", "transactions"
         synonyms = {
             'speaker': ['speaker', 'speakers', 'participant', 'participants', 'artist', 'artists', 'performer', 'performers', 'guest', 'guests', 'presenter', 'presenters', 'lineup', 'host', 'team', 'member', 'members'],
             'location': ['location', 'venue', 'where', 'address', 'place', 'city', 'country', 'hall', 'park', 'kungsträdgården', 'stockholm'],
-            'date': ['date', 'dates', 'time', 'when', 'schedule', 'timing', 'year', '2026', 'day']
+            'date': ['date', 'dates', 'time', 'when', 'schedule', 'timing', 'year', '2026', 'day'],
+            'transaction': ['transaction', 'transactions', 'transactio', 'history', 'order', 'orders', 'csv', 'excel', 'purchase', 'purchases', 'payment', 'payments', 'item', 'items', 'amount', 'price', 'total', 'customer', 'status', 'date']
         }
 
         expanded_q_words = set(q_words)
@@ -116,15 +117,27 @@ def dynamic_rag_answer_extractor(prompt):
         matching_lines.sort(key=lambda x: x[0], reverse=True)
 
         if matching_lines:
-            best_extract = '\n'.join([m[1] for m in matching_lines[:8]])
+            best_lines = [m[1] for m in matching_lines]
+            if len(best_lines) < 5 and len(content_lines) > len(best_lines):
+                best_extract = '\n'.join(content_lines[:25])
+            else:
+                best_extract = '\n'.join(best_lines[:25])
         else:
-            best_extract = '\n'.join(content_lines[:10])
+            best_extract = '\n'.join(content_lines[:25])
 
-        answer_summary = f"Based on the retrieved S3 knowledge base document content:\n\n{best_extract}\n\n**Extracted Answer for Query ('{user_q}')**:\n{best_extract}"
+        answer_summary = f"Based on the active uploaded S3 RAG document content:\n\n{best_extract}\n\n**Extracted RAG Data for ('{user_q}')**:\n{best_extract}"
         return answer_summary
     except Exception as e:
         print(f"[DYNAMIC_RAG_EXTRACT_ERR] {str(e)}", flush=True)
         return None
+
+def clean_thinking_tags(text):
+    if not text:
+        return ""
+    cleaned = re.sub(r'<thinking>.*?</thinking>', '', text, flags=re.DOTALL | re.IGNORECASE).strip()
+    if not cleaned and '<thinking>' in text.lower():
+        cleaned = re.sub(r'</?thinking>', '', text, flags=re.IGNORECASE).strip()
+    return cleaned
 
 def handle_chat(payload):
     access_key = payload.get('access_key')
@@ -190,9 +203,16 @@ def handle_chat(payload):
         if 'error' in body_json:
             response_text = f"⚠️ AWS Bedrock Error: {body_json['error']}"
         elif 'response' in body_json:
-            response_text = body_json['response']
+            raw_text = body_json['response']
+            cleaned = clean_thinking_tags(raw_text)
+            if cleaned:
+                response_text = cleaned
+            elif dynamic_rag_reply:
+                response_text = dynamic_rag_reply
+            else:
+                response_text = raw_text
         else:
-            response_text = f"⚠️ AWS Response Raw: {json.dumps(body_json)}"
+            response_text = dynamic_rag_reply or f"⚠️ AWS Response Raw: {json.dumps(body_json)}"
 
         return {
             "status": "success",
