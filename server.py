@@ -391,12 +391,67 @@ def handle_teardown_inspect(payload):
         "api_gateway": f"{STACK_NAME}-HttpApi"
     }
 
+def execute_self_healing_teardown(cfn_client, s3_client, payload):
+    purged_count = purge_all_stack_s3_buckets(s3_client, cfn_client, payload)
+
+    import time
+    time.sleep(1.0)
+
+    # 1. Discover all failed resources or resources in DELETE_FAILED state
+    failed_logical_ids = []
+    try:
+        res_list = cfn_client.describe_stack_resources(StackName=STACK_NAME).get('StackResources', [])
+        for r in res_list:
+            status = r.get('ResourceStatus', '')
+            logical_id = r.get('LogicalResourceId', '')
+            if 'FAILED' in status or logical_id == 'AgentKnowledgeBucket':
+                if logical_id and logical_id not in failed_logical_ids:
+                    failed_logical_ids.append(logical_id)
+    except Exception:
+        failed_logical_ids = ['AgentKnowledgeBucket']
+
+    if 'AgentKnowledgeBucket' not in failed_logical_ids:
+        failed_logical_ids.append('AgentKnowledgeBucket')
+
+    print(f"[SELF_HEALING_TEARDOWN] Purged {purged_count} objects. Failed logical IDs to retain: {failed_logical_ids}", flush=True)
+
+    # 2. Try standard delete_stack first
+    try:
+        cfn_client.delete_stack(StackName=STACK_NAME)
+        return {
+            "status": "success",
+            "purged_s3_objects": purged_count,
+            "message": "Initiated standard CloudFormation stack deletion!"
+        }
+    except Exception:
+        pass
+
+    # 3. Try delete_stack with dynamic RetainResources
+    try:
+        cfn_client.delete_stack(StackName=STACK_NAME, RetainResources=failed_logical_ids)
+        return {
+            "status": "success",
+            "purged_s3_objects": purged_count,
+            "retained_resources": failed_logical_ids,
+            "message": f"Initiated self-healing CloudFormation teardown with RetainResources={failed_logical_ids}!"
+        }
+    except Exception as err:
+        # Fallback to single AgentKnowledgeBucket
+        try:
+            cfn_client.delete_stack(StackName=STACK_NAME, RetainResources=['AgentKnowledgeBucket'])
+            return {
+                "status": "success",
+                "purged_s3_objects": purged_count,
+                "message": "Initiated CloudFormation teardown with RetainResources=['AgentKnowledgeBucket']!"
+            }
+        except Exception as final_err:
+            return {"status": "error", "message": str(final_err)}
+
 def handle_teardown(payload):
     access_key = payload.get('access_key')
     secret_key = payload.get('secret_key')
     region = payload.get('region', 'us-east-1')
 
-    purged_count = 0
     try:
         if access_key and secret_key:
             s3 = boto3.client('s3', region_name=region,
@@ -409,36 +464,8 @@ def handle_teardown(payload):
             s3 = boto3.client('s3', region_name=region)
             cfn = boto3.client('cloudformation', region_name=region)
 
-        # 1. Force purge all S3 objects, versions, and delete bucket containers
-        purged_count = purge_all_stack_s3_buckets(s3, cfn, payload)
+        return execute_self_healing_teardown(cfn, s3, payload)
 
-        # 2. Pause 1.5 seconds for S3 deletion propagation
-        import time
-        time.sleep(1.5)
-
-        # 3. Call CloudFormation delete_stack with RetainResources fallback recovery for DELETE_FAILED stacks
-        try:
-            cfn.delete_stack(StackName=STACK_NAME)
-        except ClientError:
-            cfn.delete_stack(StackName=STACK_NAME, RetainResources=['AgentKnowledgeBucket'])
-
-        return {
-            "status": "success",
-            "purged_s3_objects": purged_count,
-            "message": f"Purged {purged_count} objects across S3 buckets & initiated CloudFormation stack deletion on AWS!"
-        }
-
-    except ClientError as e:
-        # Fallback try with RetainResources=['AgentKnowledgeBucket'] to recover DELETE_FAILED stacks
-        try:
-            cfn.delete_stack(StackName=STACK_NAME, RetainResources=['AgentKnowledgeBucket'])
-            return {
-                "status": "success",
-                "message": "Initiated CloudFormation stack deletion with RetainResources=['AgentKnowledgeBucket'] recovery!"
-            }
-        except Exception:
-            pass
-        return {"status": "error", "message": str(e)}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 

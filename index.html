@@ -3271,12 +3271,26 @@ def handler(event, context):
             const stData = await stRes.json();
             const currStatus = stData.status;
 
+            if (currStatus === 'DELETE_FAILED') {
+              addLog('RETRY DELETE', 'tag-gateway', 'Detected DELETE_FAILED in AWS. Triggering Boto3 RetainResources self-healing teardown...');
+              addCloudWatchLog('SELF HEAL', 'tag-gateway', 'Auto-healing DELETE_FAILED: Sending Boto3 delete_stack with RetainResources...');
+              fetch('/api/teardown', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  access_key: creds.accessKey,
+                  secret_key: creds.secretKey,
+                  region: creds.region || 'us-east-1'
+                })
+              });
+            }
+
             if (cfLog && stData.events && stData.events.length > 0) {
               const latest = stData.events[0];
               cfLog.innerHTML = `<span class="cf-log-time">${new Date().toTimeString().split(' ')[0]}</span><span style="color:#ef4444; font-weight:700;">[${latest.status}]</span> ${latest.resource}: ${latest.reason || 'Deleting resource...'}`;
             }
 
-            if (currStatus === 'DELETE_COMPLETE' || currStatus === 'NOT_FOUND' || attempts > 25) {
+            if (currStatus === 'DELETE_COMPLETE' || currStatus === 'NOT_FOUND' || attempts > 30) {
               clearInterval(pollInterval);
               if (cfFill) { cfFill.style.width = '0%'; }
               if (cfStatus) { cfStatus.innerText = 'DELETE_COMPLETE'; cfStatus.style.color = '#ef4444'; }
@@ -3286,7 +3300,7 @@ def handler(event, context):
               addCloudWatchLog('DELETE COMPLETE', 'tag-gateway', 'Stack DELETE_COMPLETE verified. Clean 1-click teardown finished.');
               showToast('Teardown Complete', 'AWS CloudFormation Stack DELETE_COMPLETE verified!', 'warning');
             } else if (cfFill) {
-              cfFill.style.width = `${Math.min(35 + attempts * 5, 95)}%`;
+              cfFill.style.width = `${Math.min(35 + attempts * 4, 95)}%`;
             }
           } catch (e) {
             clearInterval(pollInterval);
