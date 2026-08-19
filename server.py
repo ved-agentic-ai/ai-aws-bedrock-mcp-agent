@@ -678,12 +678,7 @@ def force_delete_s3_bucket(s3_client, bucket_name):
         except Exception as o_err:
             print(f"[OBJ_WARN] {str(o_err)}", flush=True)
 
-        # 4. Physically delete the S3 bucket container itself from AWS
-        try:
-            s3_client.delete_bucket(Bucket=bucket_name)
-            print(f"[S3_DELETE_SUCCESS] Successfully deleted S3 bucket container {bucket_name} from AWS!", flush=True)
-        except Exception as b_err:
-            print(f"[S3_DELETE_BUCKET_WARN] Could not delete bucket container {bucket_name}: {str(b_err)}", flush=True)
+        print(f"[S3_PURGE_SUCCESS] Successfully emptied {purged_count} objects from S3 bucket {bucket_name} for CloudFormation deletion.", flush=True)
 
     except Exception as e:
         print(f"[S3_FORCE_DELETE_ERR] Error clearing bucket {bucket_name}: {str(e)}", flush=True)
