@@ -538,6 +538,17 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
 
+  SageMakerPrivateModel:
+    Type: AWS::SageMaker::Model
+    Properties:
+      ExecutionRoleArn: !GetAtt SageMakerExecutionRole.Arn
+      PrimaryContainer:
+        Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310-ubuntu22.04"
+        Environment:
+          HF_MODEL_ID: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+          HF_TASK: "text-generation"
+          MODEL_NAME: "AcctCorp-Private-Llama3-8B-FineTuned"
+
 Outputs:
   ApiEndpoint:
     Description: "HTTP API Gateway Endpoint URL for AI Agent requests"
@@ -562,6 +573,10 @@ Outputs:
   SageMakerModelRegistryGroup:
     Description: "SageMaker Model Registry Package Group Name"
     Value: !Ref SageMakerModelPackageGroup
+
+  SageMakerModelName:
+    Description: "Deployable SageMaker Model Name"
+    Value: !Ref SageMakerPrivateModel
 
   SageMakerExecutionRoleArn:
     Description: "SageMaker Execution Role ARN for Private Model Deployment"
