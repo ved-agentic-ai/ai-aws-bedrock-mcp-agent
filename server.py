@@ -105,15 +105,21 @@ def dynamic_rag_answer_extractor(prompt):
         if len(parts) < 2:
             return None
             
-        doc_part = parts[1].split('[USER QUESTION]:')[0].strip()
+        doc_part = parts[1].split('[DIRECTIVE]:')[0].split('[USER QUESTION]:')[0].strip()
         user_q = parts[1].split('[USER QUESTION]:')[1].strip() if '[USER QUESTION]:' in parts[1] else 'question'
 
         lines = [l.strip() for l in doc_part.split('\n') if len(l.strip()) > 0]
         if not lines:
             return None
 
-        # Clean document lines (filter out headers)
-        content_lines = [l for l in lines if not l.startswith('--- Document:')]
+        # Clean document lines (filter out headers, directives and prompt boilerplate)
+        content_lines = [
+            l for l in lines 
+            if not l.startswith('--- Document:') 
+            and not l.startswith('[DIRECTIVE') 
+            and not l.startswith('[USER QUESTION')
+            and not l.startswith('===')
+        ]
 
         # Query keywords for semantic matching
         q_words = [w.lower() for w in re.findall(r'\w+', user_q) if len(w) > 2 and w.lower() not in ['what', 'is', 'the', 'name', 'of', 'and', 'for', 'this', 'that', 'from', 'with', 'in', 'on', 'at', 'about', 'who', 'where', 'when', 'how', 'give', 'eme', 'this', 'detail', 'details']]
