@@ -1,7 +1,0 @@
-{
-  "filename": "AcctCorp_Confidentiality_NDA_Compliance.pdf",
-  "chunks": [
-    "Per AcctCorp Legal Compliance Policy 2026: No confidential project blueprints, source code, or financial forecasts may be shared with external third parties without an executed Mutual NDA and written VP approval.",
-    "All internal company data must remain strictly isolated inside authorized AWS VPC boundaries with zero public egress."
-  ]
-}

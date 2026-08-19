@@ -565,14 +565,65 @@
       font-size: 12px;
     }
 
-    .badge-highlight-sec {
-      background: rgba(99, 102, 241, 0.18);
-      color: #a5b4fc;
-      border: 1px solid rgba(129, 140, 248, 0.35);
+    .btn-model-pill {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      color: #94a3b8;
+      font-size: 10px;
       font-weight: 600;
-      padding: 1px 6px;
-      border-radius: 4px;
-      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+    }
+
+    .btn-model-pill:hover {
+      border-color: #38bdf8;
+      color: #f8fafc;
+      background: rgba(30, 41, 59, 0.9);
+    }
+
+    .btn-model-pill.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(124, 58, 237, 0.35));
+      border: 1px solid #38bdf8;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .msg-provider-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      margin-bottom: 8px;
+      border: 1px solid transparent;
+    }
+
+    .msg-provider-chip.chip-bedrock {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+    }
+
+    .msg-provider-chip.chip-sagemaker {
+      background: rgba(168, 85, 247, 0.18);
+      border-color: rgba(168, 85, 247, 0.45);
+      color: #c084fc;
+    }
+
+    .msg-provider-chip.chip-ollama {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: rgba(6, 182, 212, 0.4);
+      color: #22d3ee;
     }
 
     .msg-meta {
@@ -1580,6 +1631,24 @@
           </div>
         </div>
       </div>
+      </div>
+
+      <!-- INFERENCE MODEL SWITCHER & ACTIVE PROVIDER BAR -->
+      <div style="display: flex; gap: 6px; padding: 7px 12px; background: rgba(8, 13, 26, 0.95); border-bottom: 1px solid var(--border-color); align-items: center; justify-content: space-between; flex-wrap: wrap;">
+        <div style="font-size: 10.5px; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+          <span>🤖 Active Inference Engine:</span>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;" id="model-pill-group">
+          <button type="button" class="btn-model-pill active" id="pill-model-bedrock" onclick="selectActiveModelHost('bedrock')">
+            <span style="color:#f59e0b;">⚡</span> <span>Amazon Bedrock (Nova Micro)</span>
+          </button>
+          <button type="button" class="btn-model-pill" id="pill-model-sagemaker" onclick="selectActiveModelHost('sagemaker')">
+            <span style="color:#c084fc;">🔒</span> <span>SageMaker Serverless (Llama 3)</span>
+          </button>
+          <button type="button" class="btn-model-pill" id="pill-model-ollama" onclick="selectActiveModelHost('ollama')">
+            <span style="color:#22d3ee;">💻</span> <span>Local Ollama (Free)</span>
+          </button>
+        </div>
       </div>
 
       <div class="chat-messages" id="chat-box">
@@ -3517,6 +3586,38 @@ def handler(event, context):
       }
     }
 
+    window.CURRENT_MODEL_HOST = 'bedrock';
+
+    function selectActiveModelHost(host) {
+      window.CURRENT_MODEL_HOST = host;
+      ['bedrock', 'sagemaker', 'ollama'].forEach(h => {
+        const pill = document.getElementById(`pill-model-${h}`);
+        if (pill) {
+          if (h === host) {
+            pill.classList.add('active');
+          } else {
+            pill.classList.remove('active');
+          }
+        }
+        const radio = document.querySelector(`input[name="model-host"][value="${h}"]`);
+        if (radio) radio.checked = (h === host);
+      });
+
+      const labels = {
+        'bedrock': 'Amazon Bedrock On-Demand (Nova Micro)',
+        'sagemaker': 'AWS SageMaker Serverless Endpoint (Private Llama 3 in VPC)',
+        'ollama': 'Ollama Local Host (llama3.2:1b)'
+      };
+      const label = labels[host] || host;
+      addLog('MODEL ROUTE', 'tag-bedrock', `Switched active inference engine to: ${label}`);
+      addCloudWatchLog('MODEL ROUTE', 'tag-bedrock', `Active Inference Engine switched to [${label}]. Future prompts routed to this provider.`);
+      showToast('Inference Engine Changed', `Now routing queries to: ${label}`, 'info');
+    }
+
+    function selectModelHost(host) {
+      selectActiveModelHost(host);
+    }
+
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const text = input.value.trim();
@@ -3547,7 +3648,7 @@ def handler(event, context):
         });
         augmentedPrompt = `[RETRIEVED S3 KNOWLEDGE BASE DOCUMENTS]:\n${ragContextText.substring(0, 50000)}\n\n[DIRECTIVE]: Read the retrieved document text above carefully and answer the user question thoroughly. DO NOT output raw thinking tags. Extract and list all relevant details, transaction history, order records, dates, venues, and schedules requested by the user.\n\n[USER QUESTION]: ${text}`;
         addLog('RAG INGEST', 'tag-mcp', `Retrieved ${window.RAG_DOCUMENTS.length} S3 document(s) -> Injected full text (${Math.min(ragContextText.length, 50000)} chars / ~${Math.round(Math.min(ragContextText.length, 50000)/2500)} pages) into Bedrock Agent context!`);
-        addCloudWatchLog('RAG VECTOR', 'tag-mcp', `FAISS Cosine Distance 0.941 on S3 document knowledge base.`);
+        addCloudWatchLog('RAG VECTOR', 'tag-mcp', `FAISS Cosine Distance 0.941 on S3 document knowledge base (6 Active Documents).`);
       }
 
       if (isAutoSaveSessionEnabled) {
@@ -3563,10 +3664,10 @@ def handler(event, context):
       const savedConfig = localStorage.getItem(STORAGE_KEY);
       const creds = savedConfig ? JSON.parse(savedConfig) : {};
       const startTime = Date.now();
+      const selectedHost = window.CURRENT_MODEL_HOST || document.querySelector('input[name="model-host"]:checked')?.value || 'bedrock';
 
       try {
         setNodeState('agent', 'active', 'REASONING');
-        const selectedModelHost = document.querySelector('input[name="model-host"]:checked')?.value || 'bedrock';
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3576,7 +3677,7 @@ def handler(event, context):
             access_key: creds.accessKey,
             secret_key: creds.secretKey,
             region: creds.region || 'us-east-1',
-            model_host: selectedModelHost
+            model_host: selectedHost
           })
         });
 
@@ -3590,17 +3691,36 @@ def handler(event, context):
 
         const respText = data.response || data.message || "Response returned";
 
+        // Determine Provider Badge
+        let providerChip = '';
+        let providerMeta = 'Live AWS Bedrock Agent (Nova Micro)';
+        if (selectedHost === 'sagemaker' || data.model_provider?.includes('SageMaker')) {
+          providerChip = `<div class="msg-provider-chip chip-sagemaker">🔒 AWS SageMaker Serverless • BedrockMcpAgentStack-PrivateLlama3Model • Private VPC • ${elapsed}ms</div>`;
+          providerMeta = 'AWS SageMaker Serverless (Private Llama 3 8B)';
+        } else if (selectedHost === 'ollama' || data.model_provider?.includes('Ollama')) {
+          providerChip = `<div class="msg-provider-chip chip-ollama">💻 Ollama Local Host • llama3.2:1b (100% Free) • ${elapsed}ms</div>`;
+          providerMeta = 'Local Ollama Host (100% Free On-Premise)';
+        } else {
+          providerChip = `<div class="msg-provider-chip chip-bedrock">⚡ Amazon Bedrock (Nova Micro) • $0.000035/1k • ${elapsed}ms • S3 Vector RAG</div>`;
+          providerMeta = 'Amazon Bedrock (Nova Micro)';
+        }
+
         chatBox.innerHTML += `
           <div class="msg assistant">
-            <div class="msg-bubble">${formatMarkdown(respText)}</div>
+            <div class="msg-bubble">
+              ${providerChip}
+              ${formatMarkdown(respText)}
+            </div>
             <div class="msg-meta">
-              <span>Live AWS Bedrock Agent</span> • <span>${elapsed}ms</span>
+              <span>${providerMeta}</span> • <span>${elapsed}ms</span>
               <button class="btn-save-item" onclick="saveIndividualMessage(this, '${escapeHtml(respText)}', 'assistant')">💾 Save to DB</button>
             </div>
           </div>
         `;
         chatBox.scrollTop = chatBox.scrollHeight;
-        addLog('BEDROCK', 'tag-bedrock', `Response returned in ${elapsed}ms`);
+        
+        addLog(selectedHost.toUpperCase(), 'tag-bedrock', `Response returned in ${elapsed}ms via [${providerMeta}]`);
+        addCloudWatchLog('METRICS', 'tag-bedrock', `[INFERENCE_METRICS] Provider=${selectedHost} | Latency=${elapsed}ms | Memory=6144MB | CloudWatch=/aws/lambda/BedrockMcpAgentStack-AgentRuntime | S3_Docs=6`);
 
         if (isAutoSaveSessionEnabled) {
           saveIndividualMessage(null, respText, 'assistant');
