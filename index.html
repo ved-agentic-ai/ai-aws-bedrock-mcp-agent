@@ -1587,20 +1587,27 @@
         <span style="font-size: 11px; color: #38bdf8; font-weight: 700;">▶</span>
       </div>
       <div class="col-toolbar">
-        <div class="col-title">📜 Realtime Protocol &amp; CloudWatch Logs</div>
+        <div class="col-title" style="display: flex; align-items: center; gap: 6px;">
+          <span>📜 Protocol &amp; CloudWatch Logs</span>
+        </div>
         <div class="col-controls">
-          <button class="btn-col-ctl" title="Maximize Logs Column" onclick="maximizeCol('logs')">⛶ Maximize</button>
-          <button class="btn-col-ctl" title="Collapse Logs Column" onclick="collapseCol('logs')">◀ Collapse</button>
-          <button class="btn-col-ctl" title="Reset 3-Column Split View" onclick="resetColLayout()">⟳ Reset View</button>
+          <button class="btn-col-ctl" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.4); font-weight: 700;" title="Expand Both Log Streams" onclick="toggleAllLogStreams(true)">▼ Expand All</button>
+          <button class="btn-col-ctl" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8;" title="Collapse Both Log Streams" onclick="toggleAllLogStreams(false)">▲ Collapse All</button>
+          <button class="btn-col-ctl" title="Maximize Logs Column" onclick="maximizeCol('logs')">⛶ Max</button>
+          <button class="btn-col-ctl" title="Collapse Logs Column" onclick="collapseCol('logs')">◀</button>
+          <button class="btn-col-ctl" title="Reset 3-Column Split View" onclick="resetColLayout()">⟳</button>
         </div>
       </div>
-      <!-- STREAM 1: REAL-TIME PROTOCOL EVENT STREAM -->
+      <!-- STREAM 1: REAL-TIME PROTOCOL EVENT STREAM (COLLAPSIBLE, DEFAULT COLLAPSED) -->
       <div style="flex: 1; display: flex; flex-direction: column; border-bottom: 1px solid var(--border-color); min-height: 0;">
-        <div class="terminal-header">
-          <span>📜 REAL-TIME PROTOCOL EVENT STREAM</span>
-          <button class="clear-logs-btn" onclick="clearProtocolLogs()">Clear Protocol Logs</button>
+        <div class="terminal-header" style="cursor: pointer; user-select: none;" onclick="toggleLogStream('protocol')">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span>📜 REAL-TIME PROTOCOL EVENT STREAM</span>
+            <span id="protocol-stream-arrow" style="font-size: 10px; color: #38bdf8; font-weight: 700; background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">▼ Expand Stream</span>
+          </div>
+          <button class="clear-logs-btn" onclick="event.stopPropagation(); clearProtocolLogs()">Clear Logs</button>
         </div>
-        <div class="terminal-logs" id="protocol-log-stream" style="flex: 1; overflow-y: auto;">
+        <div class="terminal-logs" id="protocol-log-stream" style="display: none; flex: 1; overflow-y: auto;">
           <div class="log-line">
             <span class="log-time">16:00:00</span>
             <span class="log-tag tag-system">SYSTEM</span>
@@ -1619,13 +1626,16 @@
         </div>
       </div>
 
-      <!-- STREAM 2: REALTIME CLOUDWATCH & SYSTEM LOG STREAM -->
+      <!-- STREAM 2: REALTIME CLOUDWATCH & SYSTEM LOG STREAM (COLLAPSIBLE, DEFAULT COLLAPSED) -->
       <div style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
-        <div class="terminal-header">
-          <span>⚡ REALTIME CLOUDWATCH &amp; SYSTEM LOGS</span>
-          <button class="clear-logs-btn" onclick="clearCloudWatchLogs()">Clear CloudWatch Logs</button>
+        <div class="terminal-header" style="cursor: pointer; user-select: none;" onclick="toggleLogStream('cloudwatch')">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span>⚡ REALTIME CLOUDWATCH &amp; SYSTEM LOGS</span>
+            <span id="cw-stream-arrow" style="font-size: 10px; color: #38bdf8; font-weight: 700; background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">▼ Expand Stream</span>
+          </div>
+          <button class="clear-logs-btn" onclick="event.stopPropagation(); clearCloudWatchLogs()">Clear Logs</button>
         </div>
-        <div class="terminal-logs" id="terminal-stream" style="flex: 1; overflow-y: auto;">
+        <div class="terminal-logs" id="terminal-stream" style="display: none; flex: 1; overflow-y: auto;">
           <div class="log-line">
             <span class="log-time">17:12:00</span>
             <span class="log-tag tag-gateway">SYSTEM</span>
@@ -2417,14 +2427,21 @@
           </div>
 
           <!-- MLOPS TRIGGER BUTTON & LIVE CONSOLE OUTPUT -->
-          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
-            <button class="btn-action" style="background: #0284c7; color: #fff; font-weight: 700; padding: 6px 12px; font-size: 11px;" onclick="runMlOpsPipelineFull()">
-              ⚡ Run Full End-to-End MLOps Pipeline
-            </button>
-            <span style="font-size: 10px; color: #94a3b8;">Auto-deploys when eval loss &lt; 0.35</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn-action" style="background: #0284c7; color: #fff; font-weight: 700; padding: 6px 12px; font-size: 11px;" onclick="runMlOpsPipelineFull()">
+                ⚡ Run Full End-to-End MLOps Pipeline
+              </button>
+              <span style="font-size: 10px; color: #94a3b8;">Auto-deploys when eval loss &lt; 0.35</span>
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn-action" id="btn-toggle-mlops-out" style="padding: 4px 8px; font-size: 10px; background: #1e293b; color: #38bdf8; font-weight: 700; border-radius: 4px;" onclick="toggleMlOpsOutput()">
+                ▼ Expand Console Logs
+              </button>
+            </div>
           </div>
 
-          <pre id="mlops-pipeline-output" style="background: #060913; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-family: var(--font-mono); font-size: 10px; color: #38bdf8; margin: 0; white-space: pre-wrap;">[MLOps Pipeline Ready] Registered Model Group: BedrockMcpAgentStack-ModelRegistryGroup
+          <pre id="mlops-pipeline-output" style="display: none; background: #060913; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-family: var(--font-mono); font-size: 10px; color: #38bdf8; margin: 0; white-space: pre-wrap;">[MLOps Pipeline Ready] Registered Model Group: BedrockMcpAgentStack-ModelRegistryGroup
 Click 'Run Full End-to-End MLOps Pipeline' to execute all 6 stages with live loss metrics!</pre>
         </div>
 
@@ -2570,10 +2587,12 @@ Click 'Run Full End-to-End MLOps Pipeline' to execute all 6 stages with live los
               <option value="sagemaker_inference">04_SageMaker_Serverless_Inference.ipynb (Deploy Custom LLaMA 3 Endpoint)</option>
             </select>
           </div>
-          <div style="display: flex; gap: 6px;">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
             <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #22c55e; color: #fff;" onclick="addJupyterCell()">➕ Add Code Cell</button>
             <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #3b82f6; color: #fff;" onclick="runAllJupyterCells()">▶ Run All Cells</button>
-            <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #21262d;" onclick="clearAllJupyterOutputs()">🗑 Clear All Outputs</button>
+            <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #1e293b; color: #38bdf8;" onclick="toggleAllJupyterOutputs(true)">▼ Expand Outputs</button>
+            <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #1e293b; color: #94a3b8;" onclick="toggleAllJupyterOutputs(false)">▲ Collapse Outputs</button>
+            <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #21262d;" onclick="clearAllJupyterOutputs()">🗑 Clear</button>
             <button class="btn-action" style="padding: 5px 10px; font-size: 11px; background: #0284c7; color: #fff;" onclick="exportJupyterNotebook()">💾 Export .ipynb</button>
           </div>
         </div>
@@ -4868,6 +4887,57 @@ def handler(event, context):
       });
     }
 
+    function toggleAllSuiteModules(selectState) {
+      ['mod-agent', 'mod-rag', 'mod-finetune', 'mod-sagemaker', 'mod-jupyter', 'mod-mlops'].forEach(id => {
+        const cb = document.getElementById(id);
+        if (cb) cb.checked = selectState;
+      });
+      showToast(selectState ? 'All Modules Selected' : 'All Modules Deselected', `${selectState ? '6/6' : '0/6'} modules checked for CloudFormation deployment.`, 'info');
+    }
+
+    function toggleLogStream(type, forceState) {
+      const el = (type === 'protocol') ? document.getElementById('protocol-log-stream') : document.getElementById('terminal-stream');
+      const arrow = (type === 'protocol') ? document.getElementById('protocol-stream-arrow') : document.getElementById('cw-stream-arrow');
+      if (!el) return;
+      const isHidden = (el.style.display === 'none');
+      const nextState = (forceState !== undefined) ? forceState : isHidden;
+      el.style.display = nextState ? 'block' : 'none';
+      if (arrow) arrow.innerText = nextState ? '▲ Collapse Stream' : '▼ Expand Stream';
+    }
+
+    function toggleAllLogStreams(expand) {
+      toggleLogStream('protocol', expand);
+      toggleLogStream('cloudwatch', expand);
+      showToast(expand ? 'All Logs Expanded' : 'All Logs Collapsed', `Log streams are now ${expand ? 'fully expanded' : 'collapsed'}.`, 'info');
+    }
+
+    function toggleMlOpsOutput(forceState) {
+      const el = document.getElementById('mlops-pipeline-output');
+      const btn = document.getElementById('btn-toggle-mlops-out');
+      if (!el) return;
+      const isHidden = (el.style.display === 'none');
+      const nextState = (forceState !== undefined) ? forceState : isHidden;
+      el.style.display = nextState ? 'block' : 'none';
+      if (btn) btn.innerText = nextState ? '▲ Collapse Console Logs' : '▼ Expand Console Logs';
+    }
+
+    function toggleCellOutput(idx, forceState) {
+      const el = document.getElementById(`cell-out-console-${idx}`);
+      const arrow = document.getElementById(`cell-out-arrow-${idx}`);
+      if (!el) return;
+      const isHidden = (el.style.display === 'none');
+      const nextState = (forceState !== undefined) ? forceState : isHidden;
+      el.style.display = nextState ? 'block' : 'none';
+      if (arrow) arrow.innerText = nextState ? '▲ Collapse' : '▼ Expand';
+    }
+
+    function toggleAllJupyterOutputs(expand) {
+      notebookCells.forEach((_, idx) => {
+        toggleCellOutput(idx, expand);
+      });
+      showToast(expand ? 'Outputs Expanded' : 'Outputs Collapsed', `All notebook cell outputs are now ${expand ? 'visible' : 'hidden'}.`, 'info');
+    }
+
     // MULTI-CELL JUPYTER NOTEBOOK STUDIO SYSTEM
     let notebookCells = [
       {
@@ -4902,10 +4972,15 @@ def handler(event, context):
           <!-- CELL CODE TEXTAREA -->
           <textarea class="cell-code-input" style="width: 100%; height: 110px; font-family: var(--font-mono); font-size: 11px; border: none; border-radius: 0; background: #060a14; color: #38bdf8; padding: 12px; resize: vertical; line-height: 1.4;" placeholder="Write Python ML code here..." onchange="updateCellCode(${idx}, this.value)">${escapeHtml(cell.code)}</textarea>
 
-          <!-- CELL OUTPUT STDOUT CONSOLE -->
-          <div style="background: #020409; border-top: 1px solid var(--border-color); padding: 10px 12px;">
-            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 4px; font-family: var(--font-mono);">Out [${idx + 1}]: (STDOUT Output Console)</div>
-            <pre class="cell-output-console" style="font-family: var(--font-mono); font-size: 10.5px; color: #34d399; margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 140px; overflow-y: auto;">${escapeHtml(cell.output || "Cell output will appear here after execution...")}</pre>
+          <!-- CELL OUTPUT STDOUT CONSOLE (COLLAPSIBLE) -->
+          <div style="background: #020409; border-top: 1px solid var(--border-color); padding: 8px 12px;">
+            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 4px; font-family: var(--font-mono); display: flex; justify-content: space-between; align-items: center;">
+              <span>Out [${idx + 1}]: (STDOUT Output Console)</span>
+              <button class="btn-action" style="padding: 2px 6px; font-size: 9px; background: #1e293b; color: #38bdf8; border-radius: 3px;" onclick="toggleCellOutput(${idx})">
+                <span id="cell-out-arrow-${idx}">▼ Toggle</span>
+              </button>
+            </div>
+            <pre id="cell-out-console-${idx}" class="cell-output-console" style="display: block; font-family: var(--font-mono); font-size: 10.5px; color: #34d399; margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 140px; overflow-y: auto;">${escapeHtml(cell.output || "Cell output will appear here after execution...")}</pre>
           </div>
         </div>
       `).join('');
@@ -5208,9 +5283,18 @@ def handler(event, context):
         <h3 style="font-size: 16px; font-weight: 700; color: #f8fafc; font-family: var(--font-heading);">🎯 Topic-Wise CloudFormation Module Suite Selector</h3>
         <button style="background: none; border: none; color: #64748b; font-size: 18px; cursor: pointer;" onclick="closeSuiteModal()">✕</button>
       </div>
-      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 16px; line-height: 1.5;">
+      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px; line-height: 1.5;">
         Select which AWS Machine Learning &amp; Agentic modules you want to dynamically provision via CloudFormation. 1-Click Deploy &amp; 1-Click Teardown applies to all selected modules!
       </p>
+
+      <!-- QUICK BULK SELECTOR BUTTONS (SELECT ALL / DESELECT ALL) -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; background: #080d1a; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color);">
+        <span style="font-size: 11px; font-weight: 700; color: #cbd5e1;">⚡ Bulk Selection:</span>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 10.5px; background: #0284c7; color: #fff; font-weight: 700; border-radius: 4px;" onclick="toggleAllSuiteModules(true)">✓ Select All (6 Modules)</button>
+          <button type="button" class="btn-action" style="padding: 4px 10px; font-size: 10.5px; background: #334155; color: #94a3b8; font-weight: 600; border-radius: 4px;" onclick="toggleAllSuiteModules(false)">✕ Deselect All</button>
+        </div>
+      </div>
 
       <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
         <label style="display: flex; align-items: flex-start; gap: 10px; background: #0b1120; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); cursor: pointer;">
