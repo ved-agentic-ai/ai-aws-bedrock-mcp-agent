@@ -565,12 +565,13 @@ Resources:
   SageMakerPrivateModel:
     Type: AWS::SageMaker::Model
     Properties:
-      ModelName: !Sub "${AWS::StackName}-PrivateLlamaModel"
+      ModelName: !Sub "${AWS::StackName}-PrivateModel"
       ExecutionRoleArn: !GetAtt SageMakerExecutionRole.Arn
       PrimaryContainer:
-        Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-tgi-inference:2.1.1-tgi1.4.0-gpu-py310-cu121-ubuntu20.04-v1.0"
+        Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310-ubuntu22.04"
         Environment:
-          HF_MODEL_ID: "meta-llama/Meta-Llama-3-8B-Instruct"
+          HF_MODEL_ID: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+          HF_TASK: "text-generation"
           MAX_INPUT_LENGTH: "2048"
           MAX_TOTAL_TOKENS: "4096"
 
