@@ -2058,20 +2058,66 @@
           </div>
         </div>
 
-        <!-- SECTION 3: CUSTOM MODEL HOSTING & INFERENCE SWITCHER -->
-        <div class="card">
-          <div class="card-title">🤖 3. Custom Model Hosting &amp; Endpoint Selector</div>
-          <div class="card-desc" style="margin-bottom:10px;">
-            Toggle between AWS Managed Models, SageMaker Serverless Endpoint, or 100% Free Local Ollama Model.
+        <!-- SECTION 3: CUSTOM MODEL SELF-HOSTING & INFRASTRUCTURE COST ESTIMATOR -->
+        <div class="card" style="border: 1px solid #38bdf8; background: #060e1a; margin-top: 14px;">
+          <div class="card-title" style="color: #38bdf8; font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            🔒 3. Private Company Self-Hosted Model Infrastructure &amp; Cost Estimator
           </div>
+          <div class="card-desc" style="font-size: 11px; color: #cbd5e1; line-height: 1.6; margin-bottom: 12px;">
+            <strong style="color: #f8fafc;">What Self-Hosting Means for Your Company:</strong><br>
+            Deploying open-weights LLMs (Llama 3 8B, Qwen 2.5, DeepSeek R1 Distill) inside your private AWS VPC (SageMaker / EC2 / EKS). Your company data, IP, and customer prompts <strong>never leave your private network</strong> and are never exposed to public internet APIs (OpenAI / Anthropic).
+          </div>
+
+          <!-- INTERACTIVE INFRASTRUCTURE CALCULATOR -->
+          <div style="background: #091222; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+            <div style="font-size: 11.5px; font-weight: 700; color: #f8fafc; margin-bottom: 8px;">⚙️ Select Target Model Size to Calculate Infrastructure &amp; Costs:</div>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px;">
+              <button class="btn-action" id="btn-calc-8b" style="padding: 6px 8px; font-size: 10.5px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; font-weight: 700; border-radius: 4px;" onclick="selectModelInfraCalc('8b')">
+                🤖 7B / 8B Model<br><span style="font-size: 8.5px; font-weight: 400;">(Llama 3 8B / Qwen 7B)</span>
+              </button>
+              <button class="btn-action" id="btn-calc-14b" style="padding: 6px 8px; font-size: 10.5px; background: #1e293b; color: #94a3b8; border: 1px solid var(--border-color); border-radius: 4px;" onclick="selectModelInfraCalc('14b')">
+                🧠 14B / 32B Model<br><span style="font-size: 8.5px; font-weight: 400;">(DeepSeek R1 14B / Qwen 32B)</span>
+              </button>
+              <button class="btn-action" id="btn-calc-70b" style="padding: 6px 8px; font-size: 10.5px; background: #1e293b; color: #94a3b8; border: 1px solid var(--border-color); border-radius: 4px;" onclick="selectModelInfraCalc('70b')">
+                ⚡ 70B Heavy Model<br><span style="font-size: 8.5px; font-weight: 400;">(Llama 3 70B / DeepSeek 70B)</span>
+              </button>
+            </div>
+
+            <!-- CALCULATOR DYNAMIC OUTPUT DISPLAY -->
+            <div id="infra-calc-output" style="background: #040711; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-size: 10.5px; line-height: 1.5;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+                <div><strong style="color:#38bdf8;">🧠 Model Target:</strong> Meta Llama 3 8B / Qwen 2.5 7B</div>
+                <div><strong style="color:#38bdf8;">💾 VRAM Required:</strong> 16 GB (FP16) or 6 GB (4-bit INT4)</div>
+                <div><strong style="color:#38bdf8;">☁️ AWS Instance:</strong> <code>ml.g5.xlarge</code> (1x NVIDIA A10G 24GB)</div>
+                <div><strong style="color:#34d399;">💰 Hourly Cost:</strong> ~$1.00 / hr (~$720 / mo if 24/7)</div>
+              </div>
+              <div style="background:#090d16; padding:6px 8px; border-radius:4px; font-size:9.5px; color:#94a3b8;">
+                🎯 <strong>Best for POC ($0.00 Cost):</strong> Use <strong>SageMaker Serverless Inference</strong> to pay $0 when idle, or quantized Ollama locally!
+              </div>
+            </div>
+          </div>
+
+          <!-- FREE TIER / ULTRA-BUDGET POC GUIDE -->
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid #10b981; border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+            <div style="font-size: 11px; font-weight: 700; color: #10b981; margin-bottom: 4px;">💡 How to Run Private POC on $0.00 / Free Tier Budget:</div>
+            <div style="font-size: 10px; color: #cbd5e1; line-height: 1.5;">
+              • <strong>AWS SageMaker Serverless Inference:</strong> Pays <strong>$0 when idle</strong>! Scales to 0 instances when no queries are being made.<br>
+              • <strong>Local CPU / Quantized GGUF (Ollama / vLLM):</strong> Runs on any laptop or desktop with 8GB RAM using 4-bit quantization at $0 cost.<br>
+              • <strong>SageMaker 25-Hour Free Trial:</strong> AWS provides 25 hours/month of free ml.m5.xlarge / ml.g4dn training instances.
+            </div>
+          </div>
+
+          <!-- ENDPOINT SELECTOR -->
+          <div style="font-size: 11px; font-weight: 700; color: #f8fafc; margin-bottom: 6px;">🤖 Active Inference Endpoint Selector:</div>
           <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;">
             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
               <input type="radio" name="model-host" value="bedrock" checked onclick="selectModelHost('bedrock')">
-              <span><strong>Amazon Bedrock On-Demand</strong> (Nova Micro / Claude 3.5 - Pay per token)</span>
+              <span><strong>Amazon Bedrock On-Demand</strong> (Nova Micro / Claude 3.5 - Managed Managed API)</span>
             </label>
             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
               <input type="radio" name="model-host" value="sagemaker" onclick="selectModelHost('sagemaker')">
-              <span><strong>AWS SageMaker Serverless Inference</strong> (Custom LLaMA 3.2 Endpoint)</span>
+              <span><strong>AWS SageMaker Serverless Endpoint</strong> (Private Self-Hosted Llama 3 8B in Private VPC)</span>
             </label>
             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
               <input type="radio" name="model-host" value="ollama" onclick="selectModelHost('ollama')">
@@ -3365,6 +3411,66 @@ def handler(event, context):
         d.filename.toLowerCase().includes(q) || (d.sample_text && d.sample_text.toLowerCase().includes(q))
       );
       renderS3DocViewerList(filtered);
+    }
+
+    function selectModelInfraCalc(size) {
+      ['8b', '14b', '70b'].forEach(s => {
+        const btn = document.getElementById('btn-calc-' + s);
+        if (btn) {
+          if (s === size) {
+            btn.style.background = 'rgba(56, 189, 248, 0.2)';
+            btn.style.color = '#38bdf8';
+            btn.style.borderColor = '#38bdf8';
+            btn.style.fontWeight = '700';
+          } else {
+            btn.style.background = '#1e293b';
+            btn.style.color = '#94a3b8';
+            btn.style.borderColor = 'var(--border-color)';
+            btn.style.fontWeight = '400';
+          }
+        }
+      });
+
+      const output = document.getElementById('infra-calc-output');
+      if (!output) return;
+
+      if (size === '8b') {
+        output.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+            <div><strong style="color:#38bdf8;">🧠 Model Target:</strong> Meta Llama 3 8B / Qwen 2.5 7B</div>
+            <div><strong style="color:#38bdf8;">💾 VRAM Required:</strong> 16 GB (FP16) or 6 GB (4-bit INT4)</div>
+            <div><strong style="color:#38bdf8;">☁️ AWS Instance:</strong> <code>ml.g5.xlarge</code> (1x NVIDIA A10G 24GB)</div>
+            <div><strong style="color:#34d399;">💰 Hourly Cost:</strong> ~$1.00 / hr (~$720 / mo if 24/7)</div>
+          </div>
+          <div style="background:#090d16; padding:6px 8px; border-radius:4px; font-size:9.5px; color:#94a3b8;">
+            🎯 <strong>Best for POC ($0.00 Cost):</strong> Use <strong>SageMaker Serverless Inference</strong> to pay $0 when idle, or quantized Ollama locally!
+          </div>
+        `;
+      } else if (size === '14b') {
+        output.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+            <div><strong style="color:#a855f7;">🧠 Model Target:</strong> DeepSeek R1 14B / Qwen 32B</div>
+            <div><strong style="color:#a855f7;">💾 VRAM Required:</strong> 32 GB - 64 GB VRAM</div>
+            <div><strong style="color:#a855f7;">☁️ AWS Instance:</strong> <code>ml.g5.4xlarge</code> (2x NVIDIA A10G)</div>
+            <div><strong style="color:#34d399;">💰 Hourly Cost:</strong> ~$1.62 / hr (~$1,160 / mo if 24/7)</div>
+          </div>
+          <div style="background:#090d16; padding:6px 8px; border-radius:4px; font-size:9.5px; color:#94a3b8;">
+            🎯 <strong>Best for Enterprise:</strong> High reasoning capabilities, fine-tuned with QLoRA on company policies.
+          </div>
+        `;
+      } else if (size === '70b') {
+        output.innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+            <div><strong style="color:#ec4899;">🧠 Model Target:</strong> Meta Llama 3 70B / DeepSeek R1 70B</div>
+            <div><strong style="color:#ec4899;">💾 VRAM Required:</strong> 160 GB VRAM</div>
+            <div><strong style="color:#ec4899;">☁️ AWS Instance:</strong> <code>ml.p4d.24xlarge</code> (8x NVIDIA A100 40GB)</div>
+            <div><strong style="color:#ef4444;">💰 Hourly Cost:</strong> ~$12.50 / hr (~$9,000 / mo if 24/7)</div>
+          </div>
+          <div style="background:#090d16; padding:6px 8px; border-radius:4px; font-size:9.5px; color:#94a3b8;">
+            💡 <strong>Cost Tip:</strong> For small budgets, fine-tune an 8B model with LoRA adapters instead of running a 70B model raw!
+          </div>
+        `;
+      }
     }
 
     let simAnimationTimer = null;
