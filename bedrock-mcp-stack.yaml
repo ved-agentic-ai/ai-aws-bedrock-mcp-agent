@@ -527,6 +527,70 @@ Resources:
       ScheduleExpression: "rate(7 days)"
       State: ENABLED
 
+  # =========================================================================
+  # 7. PRIVATE SELF-HOSTED MODEL SERVERLESS INFERENCE LAYER ($0.00 Idle Cost)
+  # =========================================================================
+
+  SageMakerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-SageMakerExecutionRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SageMakerServerlessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${AgentKnowledgeBucket}"
+                  - !Sub "arn:aws:s3:::${AgentKnowledgeBucket}/*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+
+  SageMakerPrivateModel:
+    Type: AWS::SageMaker::Model
+    Properties:
+      ModelName: !Sub "${AWS::StackName}-PrivateLlamaModel"
+      ExecutionRoleArn: !GetAtt SageMakerExecutionRole.Arn
+      PrimaryContainer:
+        Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-tgi-inference:2.1.1-tgi1.4.0-gpu-py310-cu121-ubuntu20.04-v1.0"
+        Environment:
+          HF_MODEL_ID: "meta-llama/Meta-Llama-3-8B-Instruct"
+          MAX_INPUT_LENGTH: "2048"
+          MAX_TOTAL_TOKENS: "4096"
+
+  SageMakerServerlessEndpointConfig:
+    Type: AWS::SageMaker::EndpointConfig
+    Properties:
+      EndpointConfigName: !Sub "${AWS::StackName}-ServerlessEndpointConfig"
+      ProductionVariants:
+        - VariantName: AllTraffic
+          ModelName: !GetAtt SageMakerPrivateModel.ModelName
+          ServerlessConfig:
+            MemorySizeInMB: 6144
+            MaxConcurrency: 5
+
+  SageMakerServerlessEndpoint:
+    Type: AWS::SageMaker::Endpoint
+    Properties:
+      EndpointName: !Sub "${AWS::StackName}-PrivateModelEndpoint"
+      EndpointConfigName: !GetAtt SageMakerServerlessEndpointConfig.EndpointConfigName
+
 Outputs:
   ApiEndpoint:
     Description: "HTTP API Gateway Endpoint URL for AI Agent requests"
@@ -551,3 +615,7 @@ Outputs:
   SageMakerModelRegistryGroup:
     Description: "SageMaker Model Registry Package Group Name"
     Value: !Ref SageMakerModelPackageGroup
+
+  SageMakerPrivateEndpointName:
+    Description: "Private SageMaker Serverless Inference Endpoint Name"
+    Value: !Ref SageMakerServerlessEndpoint

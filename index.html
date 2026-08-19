@@ -1153,9 +1153,120 @@
       animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+    /* QUANTIZATION ANIMATION & MLOPS VISUALIZER STYLES */
+    .quant-bit-container {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      background: #040711;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow-x: auto;
+      transition: all 0.4s ease;
+    }
+
+    .quant-bit-box {
+      width: 14px;
+      height: 22px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #fff;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .quant-bit-sign { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.6); }
+    .quant-bit-exp { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.6); }
+    .quant-bit-mantissa { background: #38bdf8; box-shadow: 0 0 6px rgba(56, 189, 248, 0.6); }
+    .quant-bit-int { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.8); }
+
+    .quant-bar-bg {
+      height: 12px;
+      background: #0d1322;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .quant-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.4s;
+    }
+
+    .qa-accordion-item {
+      background: #070c18;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .qa-accordion-item:hover {
+      border-color: #38bdf8;
+    }
+
+    .qa-accordion-header {
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #f8fafc;
+      cursor: pointer;
+      user-select: none;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .qa-accordion-body {
+      padding: 0 14px 12px 14px;
+      font-size: 10.5px;
+      color: #cbd5e1;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .qa-accordion-body.open {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .mlops-stage-card {
+      background: #0d1322;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 10px;
+      transition: all 0.3s;
+      flex: 1;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .mlops-stage-active {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+      transform: scale(1.03);
+    }
+
+    .mlops-stage-passed {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -1988,17 +2099,149 @@
           </div>
         </div>
 
-        <!-- SECTION 2: QLoRA FINE-TUNING & INSTRUCTION TUNING STUDIO -->
-        <div class="card">
+        <!-- SECTION 2: INTERACTIVE QUANTIZATION VISUALIZER & BIT-COMPRESSION ENGINE -->
+        <div class="card" style="border: 1px solid #10b981; background: #060e1a; margin-top: 14px;">
+          <div class="card-title" style="color: #10b981; font-size: 13.5px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>🎬 2. Interactive Quantization Visualizer &amp; Memory-Compression Engine</span>
+            </div>
+            <span style="font-size: 10px; color: #34d399; background: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.3); font-family: var(--font-mono);">
+              FP32 ➔ INT4: 75% VRAM Reduction
+            </span>
+          </div>
+          <div class="card-desc" style="font-size: 11px; color: #cbd5e1; line-height: 1.6; margin-bottom: 12px;">
+            Watch in real-time how neural weights are compressed from 32-bit floating point numbers down to 4-bit integers with zero noticeable accuracy loss, allowing 8B &amp; 70B models to run on affordable GPUs or <strong>$0.00 SageMaker Serverless</strong>!
+          </div>
+
+          <!-- PRECISION SELECTOR BUTTONS -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px;">
+            <button class="btn-action" id="btn-quant-fp32" style="padding: 6px 4px; font-size: 10px; background: #1e293b; color: #94a3b8; border: 1px solid var(--border-color); border-radius: 4px;" onclick="selectQuantPrecision('fp32')">
+              🔴 FP32 (Full 32-Bit)<br><span style="font-size: 8.5px;">4 Bytes/Param</span>
+            </button>
+            <button class="btn-action" id="btn-quant-fp16" style="padding: 6px 4px; font-size: 10px; background: #1e293b; color: #94a3b8; border: 1px solid var(--border-color); border-radius: 4px;" onclick="selectQuantPrecision('fp16')">
+              🟡 FP16 (Half 16-Bit)<br><span style="font-size: 8.5px;">2 Bytes/Param</span>
+            </button>
+            <button class="btn-action" id="btn-quant-int8" style="padding: 6px 4px; font-size: 10px; background: #1e293b; color: #94a3b8; border: 1px solid var(--border-color); border-radius: 4px;" onclick="selectQuantPrecision('int8')">
+              🔵 INT8 (8-Bit Integer)<br><span style="font-size: 8.5px;">1 Byte/Param</span>
+            </button>
+            <button class="btn-action" id="btn-quant-int4" style="padding: 6px 4px; font-size: 10px; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; font-weight: 700; border-radius: 4px;" onclick="selectQuantPrecision('int4')">
+              🟢 INT4 (4-Bit NF4/GGUF)<br><span style="font-size: 8.5px;">0.5 Byte/Param ⭐</span>
+            </button>
+          </div>
+
+          <!-- ANIMATED BIT BLOCK REPRESENTATION -->
+          <div style="background: #040711; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 10.5px;">
+              <span id="quant-bit-title" style="font-weight: 700; color: #10b981;">INT4 Quantized Weight Representation (4 Bits):</span>
+              <span id="quant-bit-formula" style="font-family: var(--font-mono); color: #94a3b8; font-size: 9.5px;">Weight = Scale × Quant_Value + Zero_Point</span>
+            </div>
+            
+            <div id="quant-bit-display" class="quant-bit-container">
+              <!-- Dynamically populated by JS -->
+            </div>
+
+            <div id="quant-legend" style="display: flex; gap: 12px; justify-content: center; margin-top: 8px; font-size: 9.5px; color: #94a3b8;">
+              <!-- Dynamically populated by JS -->
+            </div>
+          </div>
+
+          <!-- METRICS COMPARISON (VRAM, SPEED, ACCURACY, COST) -->
+          <div style="background: #091222; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11px;">
+              <span style="font-weight: 700; color: #f8fafc;">💾 Llama 3 8B VRAM Memory Footprint:</span>
+              <span id="quant-vram-text" style="font-weight: 700; color: #10b981; font-family: var(--font-mono);">4.8 GB (Fits in Laptop &amp; Serverless!)</span>
+            </div>
+
+            <div class="quant-bar-bg" style="margin-bottom: 10px;">
+              <div id="quant-bar-fill" class="quant-bar-fill" style="width: 15%; background: #10b981;"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; font-size: 10px;">
+              <div style="background: #040711; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px;">
+                <div style="color: #94a3b8;">⚡ Generation Speed</div>
+                <div id="quant-speed-text" style="font-weight: 700; color: #38bdf8; font-size: 12px; margin-top: 2px;">68 tok/s (3.8x Speedup)</div>
+              </div>
+              <div style="background: #040711; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px;">
+                <div style="color: #94a3b8;">🎯 Accuracy Retained</div>
+                <div id="quant-acc-text" style="font-weight: 700; color: #34d399; font-size: 12px; margin-top: 2px;">99.2% (Zero Loss)</div>
+              </div>
+              <div style="background: #040711; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px;">
+                <div style="color: #94a3b8;">💰 Cloud Server Cost</div>
+                <div id="quant-cost-text" style="font-weight: 700; color: #f59e0b; font-size: 12px; margin-top: 2px;">$0.00 / Idle (Serverless)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- INTERACTIVE QUANTIZATION DEEP-DIVE Q&A ACCORDION -->
+          <div style="margin-top: 10px;">
+            <div style="font-size: 11.5px; font-weight: 700; color: #38bdf8; margin-bottom: 8px;">💡 Deep-Dive: Everything You Need to Know About Quantization:</div>
+            
+            <div class="qa-accordion-item">
+              <div class="qa-accordion-header" onclick="toggleQaAccordion(this)">
+                <span>🔍 1. What is Quantization in Plain English?</span>
+                <span style="color: #38bdf8;">▼</span>
+              </div>
+              <div class="qa-accordion-body">
+                Neural networks are naturally trained using 32-bit floating point numbers (e.g. <code>0.81729412...</code>). Each number takes 4 bytes of memory. <strong>Quantization</strong> maps these continuous float numbers to smaller discrete bins (like 4-bit integers from <code>-8 to +7</code>) multiplied by a scale factor. This shrinks the model size by <strong>75%</strong> while retaining over 99% of its intelligence!
+              </div>
+            </div>
+
+            <div class="qa-accordion-item">
+              <div class="qa-accordion-header" onclick="toggleQaAccordion(this)">
+                <span>⚡ 2. Why is Quantization Used in Enterprises?</span>
+                <span style="color: #38bdf8;">▼</span>
+              </div>
+              <div class="qa-accordion-body">
+                • <strong>Hardware Cost Reduction</strong>: An unquantized 70B model requires 160GB VRAM (requiring 8x A100 GPUs costing ~$9,000/mo). In 4-bit INT4, it fits into 40GB VRAM (1 GPU costing ~$1,100/mo)!<br>
+                • <strong>Inference Throughput</strong>: Memory bandwidth is the primary bottleneck in LLM inference. Transferring 4 bits per parameter over GPU buses is <strong>3x to 4x faster</strong> than 16/32 bits.<br>
+                • <strong>Local Deployment</strong>: Enables running enterprise LLMs directly on company laptops or CPU servers at $0.00 cost.
+              </div>
+            </div>
+
+            <div class="qa-accordion-item">
+              <div class="qa-accordion-header" onclick="toggleQaAccordion(this)">
+                <span>🛑 3. What Happens if You Do NOT Use Quantization?</span>
+                <span style="color: #ef4444;">▼</span>
+              </div>
+              <div class="qa-accordion-body">
+                • <strong>OOM (Out Of Memory) Crashes</strong>: The model immediately fails to load on standard cloud instances or edge devices.<br>
+                • <strong>Massive Cloud Overspending</strong>: You are forced to pay for dedicated 24/7 multi-GPU clusters ($12.50/hr) even when no users are chatting.<br>
+                • <strong>High Latency</strong>: Slow token generation times (10-18 tokens/sec vs 60+ tokens/sec).
+              </div>
+            </div>
+
+            <div class="qa-accordion-item">
+              <div class="qa-accordion-header" onclick="toggleQaAccordion(this)">
+                <span>🧩 4. What is the Difference Between GGUF, AWQ, GPTQ, and BitsAndBytes NF4?</span>
+                <span style="color: #38bdf8;">▼</span>
+              </div>
+              <div class="qa-accordion-body">
+                • <strong>GGUF (llama.cpp / Ollama)</strong>: The universal standard for <strong>CPU &amp; Apple Silicon inference</strong>. Perfect for 100% free local execution.<br>
+                • <strong>AWQ (Activation-aware Weight Quantization)</strong>: Best for <strong>high-concurrency GPU serving (vLLM / SageMaker)</strong>. Preserves 1% of salient weights in FP16 for maximum accuracy.<br>
+                • <strong>BitsAndBytes NF4 (NormalFloat4)</strong>: The gold standard for <strong>QLoRA Fine-Tuning</strong>. Fits information-theoretically optimal quantile distributions for normal-distributed neural weights.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: QLoRA FINE-TUNING & INSTRUCTION TUNING STUDIO -->
+        <div class="card" style="margin-top: 14px;">
           <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <span>🎯 2. QLoRA Instruction Fine-Tuning Studio</span>
+            <span>🎯 3. QLoRA Instruction Fine-Tuning Studio</span>
             <div style="display: flex; gap: 4px;">
               <button class="sub-tab-btn active" id="btn-ft-tab-friendly" style="padding: 3px 8px; font-size: 10px;" onclick="switchFinetuneTab('friendly')">✨ Friendly Builder</button>
               <button class="sub-tab-btn" id="btn-ft-tab-json" style="padding: 3px 8px; font-size: 10px;" onclick="switchFinetuneTab('json')">💻 Raw JSON (Dev)</button>
             </div>
           </div>
           <div class="card-desc" style="margin-bottom:10px;">
-            Teach AI models new behaviors, custom brand tones, or specialized JSON outputs using QLoRA instruction tuning.
+            Teach open-weights AI models specialized company rules, internal HR policies, or domain-specific terminology using Parameter-Efficient Fine-Tuning (PEFT / QLoRA).
+          </div>
+
+          <!-- PRE-CONFIGURED COMPANY SCENARIO SHORTCUTS -->
+          <div style="display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;">
+            <button class="btn-action" style="font-size: 9.5px; padding: 3px 8px; background: #1e293b; color: #38bdf8;" onclick="loadCompanyPreset('hr')">🏢 Preset: HR Expense Policy</button>
+            <button class="btn-action" style="font-size: 9.5px; padding: 3px 8px; background: #1e293b; color: #38bdf8;" onclick="loadCompanyPreset('refund')">💳 Preset: Customer Refund Rules</button>
+            <button class="btn-action" style="font-size: 9.5px; padding: 3px 8px; background: #1e293b; color: #38bdf8;" onclick="loadCompanyPreset('legal')">⚖️ Preset: Confidential Legal NDA</button>
           </div>
 
           <!-- TAB 1: FRIENDLY INSTRUCTION BUILDER -->
@@ -2006,15 +2249,15 @@
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;">
               <div>
                 <label class="form-label" style="font-weight:700; color:#38bdf8;">1. AI System Persona / Behavior Prompt:</label>
-                <input type="text" id="ft-system-prompt" class="form-input" style="width:100%; font-size:11px; padding:6px;" value="You are a helpful customer support bot for Prime Upgrades.">
+                <input type="text" id="ft-system-prompt" class="form-input" style="width:100%; font-size:11px; padding:6px;" value="You are AcctCorp's internal HR Policy &amp; Operations Expert.">
               </div>
               <div>
                 <label class="form-label" style="font-weight:700; color:#38bdf8;">2. User Question / Input Scenario:</label>
-                <input type="text" id="ft-user-input" class="form-input" style="width:100%; font-size:11px; padding:6px;" value="Can I get a refund for my Prime upgrade after 12 hours?">
+                <input type="text" id="ft-user-input" class="form-input" style="width:100%; font-size:11px; padding:6px;" value="What is AcctCorp's policy on remote work expense reimbursements?">
               </div>
               <div>
                 <label class="form-label" style="font-weight:700; color:#38bdf8;">3. Desired Target Model Response (Output):</label>
-                <textarea id="ft-target-output" class="form-input" style="width:100%; height:45px; font-size:11px; padding:6px;">Yes! All Prime upgrades purchased within 24 hours are 100% eligible for instant refund.</textarea>
+                <textarea id="ft-target-output" class="form-input" style="width:100%; height:45px; font-size:11px; padding:6px;">Per AcctCorp 2026 Policy Section 4.2: Full-time employees are entitled to $150/month home office internet and equipment reimbursement submitted via the internal ERP portal by the 25th of each month.</textarea>
               </div>
             </div>
 
@@ -2025,15 +2268,15 @@
               <div style="font-size:11px; font-weight:700; color:#f8fafc; margin-bottom:8px;">📊 Model Output Comparison (Before vs After Fine-Tuning):</div>
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                 <div style="background:#0c111d; border:1px solid #ef4444; border-radius:6px; padding:8px;">
-                  <div style="font-size:10px; font-weight:700; color:#ef4444; margin-bottom:4px;">❌ Base Model (Before Tuning):</div>
+                  <div style="font-size:10px; font-weight:700; color:#ef4444; margin-bottom:4px;">❌ Base Open-Source Model (Before):</div>
                   <div style="font-size:10.5px; color:#cbd5e1; font-family:var(--font-sans);" id="ft-before-text">"I am a general AI assistant. I do not have access to specific company refund policies."</div>
                 </div>
                 <div style="background:#0c111d; border:1px solid #10b981; border-radius:6px; padding:8px;">
-                  <div style="font-size:10px; font-weight:700; color:#10b981; margin-bottom:4px;">✅ QLoRA Adapter (After Tuning):</div>
-                  <div style="font-size:10.5px; color:#34d399; font-family:var(--font-sans);" id="ft-after-text">"Yes! All Prime upgrades purchased within 24 hours are 100% eligible for instant refund."</div>
+                  <div style="font-size:10px; font-weight:700; color:#10b981; margin-bottom:4px;">✅ Private Company Fine-Tuned Model (After):</div>
+                  <div style="font-size:10.5px; color:#34d399; font-family:var(--font-sans);" id="ft-after-text">"Per AcctCorp 2026 Policy Section 4.2..."</div>
                 </div>
               </div>
-              <div style="font-size:9.5px; color:#64748b; margin-top:6px; font-family:var(--font-mono);">Training metrics: 3 Epochs completed in 3.8s | Final Loss: 0.2814 | Adapter Size: 14.2 MB</div>
+              <div style="font-size:9.5px; color:#64748b; margin-top:6px; font-family:var(--font-mono);" id="ft-metrics-footer">Training metrics: 3 Epochs completed in 3.8s | Final Loss: 0.2814 | Adapter Size: 14.2 MB</div>
             </div>
           </div>
 
@@ -2043,9 +2286,9 @@
               <label class="form-label" style="font-weight:700; color:#38bdf8;">Custom Instruction Dataset (JSON / S3 Path):</label>
               <textarea id="custom-dataset-json" class="form-input" style="width:100%; height:70px; font-family:var(--font-mono); font-size:10px; margin-top:4px;" placeholder="Type custom instruction pairs...">[
   {
-    "instruction": "Classify user feedback into JSON ticket",
-    "input": "My payment failed on order #1092",
-    "output": "{\"category\": \"PAYMENT_FAILURE\", \"priority\": \"HIGH\"}"
+    "instruction": "Answer internal company policy questions for AcctCorp",
+    "input": "What is AcctCorp policy on remote work expense reimbursements?",
+    "output": "Per AcctCorp 2026 Policy Section 4.2: Full-time employees are entitled to $150/month home office internet reimbursement."
   }
 ]</textarea>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
@@ -2058,10 +2301,10 @@
           </div>
         </div>
 
-        <!-- SECTION 3: CUSTOM MODEL SELF-HOSTING & INFRASTRUCTURE COST ESTIMATOR -->
+        <!-- SECTION 4: CUSTOM MODEL SELF-HOSTING & INFRASTRUCTURE COST ESTIMATOR -->
         <div class="card" style="border: 1px solid #38bdf8; background: #060e1a; margin-top: 14px;">
           <div class="card-title" style="color: #38bdf8; font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            🔒 3. Private Company Self-Hosted Model Infrastructure &amp; Cost Estimator
+            🔒 4. Private Company Self-Hosted Model Infrastructure &amp; Cost Estimator
           </div>
           <div class="card-desc" style="font-size: 11px; color: #cbd5e1; line-height: 1.6; margin-bottom: 12px;">
             <strong style="color: #f8fafc;">What Self-Hosting Means for Your Company:</strong><br>
@@ -2088,7 +2331,7 @@
             <div id="infra-calc-output" style="background: #040711; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-size: 10.5px; line-height: 1.5;">
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
                 <div><strong style="color:#38bdf8;">🧠 Model Target:</strong> Meta Llama 3 8B / Qwen 2.5 7B</div>
-                <div><strong style="color:#38bdf8;">💾 VRAM Required:</strong> 16 GB (FP16) or 6 GB (4-bit INT4)</div>
+                <div><strong style="color:#38bdf8;">💾 VRAM Required:</strong> 16 GB (FP16) or 4.8 GB (4-bit INT4)</div>
                 <div><strong style="color:#38bdf8;">☁️ AWS Instance:</strong> <code>ml.g5.xlarge</code> (1x NVIDIA A10G 24GB)</div>
                 <div><strong style="color:#34d399;">💰 Hourly Cost:</strong> ~$1.00 / hr (~$720 / mo if 24/7)</div>
               </div>
@@ -2113,7 +2356,7 @@
           <div style="display:flex; flex-direction:column; gap:6px; font-size:11px;">
             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
               <input type="radio" name="model-host" value="bedrock" checked onclick="selectModelHost('bedrock')">
-              <span><strong>Amazon Bedrock On-Demand</strong> (Nova Micro / Claude 3.5 - Managed Managed API)</span>
+              <span><strong>Amazon Bedrock On-Demand</strong> (Nova Micro / Claude 3.5 - Managed API)</span>
             </label>
             <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
               <input type="radio" name="model-host" value="sagemaker" onclick="selectModelHost('sagemaker')">
@@ -2126,53 +2369,63 @@
           </div>
         </div>
 
-        <!-- SECTION 4: AWS COST OPTIMIZATION MATRIX -->
-        <!-- SECTION 3: ENTERPRISE MLOPS PIPELINE & CONTINUOUS RETRAINING -->
-        <div class="card" style="border-color: #06b6d4;">
-          <div class="card-title" style="color: #06b6d4;">🔄 3. Enterprise End-to-End MLOps Pipeline &amp; Automated Retraining</div>
+        <!-- SECTION 5: ENTERPRISE MLOPS PIPELINE & CONTINUOUS RETRAINING -->
+        <div class="card" style="border-color: #06b6d4; margin-top: 14px;">
+          <div class="card-title" style="color: #06b6d4; font-size: 13.5px; font-weight: 700;">
+            🔄 5. Enterprise End-to-End MLOps Pipeline &amp; Automated Retraining
+          </div>
           <div class="card-desc" style="margin-bottom: 12px;">
-            Continuous machine learning pipeline orchestrating Data Drift Detection, Automated Retraining, Model Evaluation &amp; SageMaker Model Registry versioning.
+            Continuous machine learning lifecycle orchestrating Data Drift Detection, Automated QLoRA Retraining, Benchmark Evaluation, and SageMaker Model Registry versioning.
           </div>
 
           <!-- MLOPS PIPELINE DAG VISUALIZER -->
           <div style="background: #080d1a; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
             <div style="font-size: 11px; font-weight: 700; color: #06b6d4; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-              <span>🔁 MLOps DAG Workflow Pipeline (EventBridge + SageMaker Pipelines):</span>
-              <span style="font-size: 9.5px; color: #10b981; font-family: var(--font-mono); font-weight: 700;">Status: Active Retraining Cron</span>
+              <span>🔁 6-Stage MLOps Pipeline Workflow (EventBridge + SageMaker Pipelines):</span>
+              <span id="mlops-status-badge" style="font-size: 9.5px; color: #10b981; font-family: var(--font-mono); font-weight: 700;">Status: Ready to Execute</span>
             </div>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; font-size: 10px; text-align: center;">
-              <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; flex: 1; min-width: 90px;">
-                <div style="font-weight: 700; color: #38bdf8;">1. EventBridge</div>
-                <div style="font-size: 9px; color: #64748b;">Drift Cron / 7 Days</div>
+            
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px;">
+              <div class="mlops-stage-card" id="mlops-stage-1">
+                <div style="font-weight: 700; color: #38bdf8;">1. Ingest Data</div>
+                <div style="font-size: 8.5px; color: #64748b;">S3 JSONL Prep</div>
               </div>
-              <span style="color: #06b6d4; font-weight: 700;">➔</span>
-              <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; flex: 1; min-width: 90px;">
-                <div style="font-weight: 700; color: #10b981;">2. Data Prep</div>
-                <div style="font-size: 9px; color: #64748b;">S3 Processing Job</div>
+              <div class="mlops-stage-card" id="mlops-stage-2">
+                <div style="font-weight: 700; color: #f59e0b;">2. Drift Check</div>
+                <div style="font-size: 8.5px; color: #64748b;">EventBridge Cron</div>
               </div>
-              <span style="color: #06b6d4; font-weight: 700;">➔</span>
-              <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; flex: 1; min-width: 90px;">
-                <div style="font-weight: 700; color: #a855f7;">3. Spot Retrain</div>
-                <div style="font-size: 9px; color: #64748b;">QLoRA GPU Training</div>
+              <div class="mlops-stage-card" id="mlops-stage-3">
+                <div style="font-weight: 700; color: #a855f7;">3. QLoRA Train</div>
+                <div style="font-size: 8.5px; color: #64748b;">4-bit NF4 Spot</div>
               </div>
-              <span style="color: #06b6d4; font-weight: 700;">➔</span>
-              <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px; flex: 1; min-width: 90px;">
-                <div style="font-weight: 700; color: #ec4899;">4. Registry</div>
-                <div style="font-size: 9px; color: #64748b;">SageMaker Versioning</div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+              <div class="mlops-stage-card" id="mlops-stage-4">
+                <div style="font-weight: 700; color: #34d399;">4. Benchmark Eval</div>
+                <div style="font-size: 8.5px; color: #64748b;">ROUGE-L &gt; 0.85</div>
+              </div>
+              <div class="mlops-stage-card" id="mlops-stage-5">
+                <div style="font-weight: 700; color: #ec4899;">5. Model Registry</div>
+                <div style="font-size: 8.5px; color: #64748b;">SageMaker Version</div>
+              </div>
+              <div class="mlops-stage-card" id="mlops-stage-6">
+                <div style="font-weight: 700; color: #10b981;">6. Serverless Deploy</div>
+                <div style="font-size: 8.5px; color: #64748b;">Private VPC Endpoint</div>
               </div>
             </div>
           </div>
 
           <!-- MLOPS TRIGGER BUTTON & LIVE CONSOLE OUTPUT -->
-          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-            <button class="btn-action" style="background: #0284c7; color: #fff; font-weight: 700;" onclick="runMlOpsPipeline()">
-              ⚡ Trigger Continuous Retraining Pipeline
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
+            <button class="btn-action" style="background: #0284c7; color: #fff; font-weight: 700; padding: 6px 12px; font-size: 11px;" onclick="runMlOpsPipelineFull()">
+              ⚡ Run Full End-to-End MLOps Pipeline
             </button>
-            <span style="font-size: 10px; color: #94a3b8;">Automated deployment when eval loss &lt; 0.35</span>
+            <span style="font-size: 10px; color: #94a3b8;">Auto-deploys when eval loss &lt; 0.35</span>
           </div>
 
           <pre id="mlops-pipeline-output" style="background: #060913; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; font-family: var(--font-mono); font-size: 10px; color: #38bdf8; margin: 0; white-space: pre-wrap;">[MLOps Pipeline Ready] Registered Model Group: BedrockMcpAgentStack-ModelRegistryGroup
-Click 'Trigger Continuous Retraining Pipeline' to execute end-to-end MLOps DAG workflow!</pre>
+Click 'Run Full End-to-End MLOps Pipeline' to execute all 6 stages with live loss metrics!</pre>
         </div>
 
         <div class="card" style="border-color:#38bdf8;">
@@ -2466,6 +2719,41 @@ Click 'Trigger Continuous Retraining Pipeline' to execute end-to-end MLOps DAG w
 
           <div id="sim-status-banner" style="margin-top: 12px; padding: 8px 12px; border-radius: 6px; background: #0b1120; border: 1px solid var(--border-color); font-size: 10.5px; font-family: var(--font-mono); color: #38bdf8; text-align: center;">
             💡 Click "▶ Run Live Animation" to watch the interactive flow step-by-step!
+          </div>
+        </div>
+
+        <!-- CONCEPT 6: PRIVATE SELF-HOSTED MODEL VS PUBLIC API -->
+        <div class="card" style="border: 1px solid #38bdf8; background: rgba(56, 189, 248, 0.05); margin-top: 14px;">
+          <div class="card-title" style="color: #38bdf8; font-size: 13px; font-weight: 700;">
+            🔒 6. Enterprise Private Self-Hosted Models vs. Public APIs
+          </div>
+          <div class="card-desc" style="font-size: 11px; color: #cbd5e1; line-height: 1.6;">
+            • <strong>Public APIs (OpenAI/ChatGPT)</strong>: Transmits confidential enterprise data, financial spreadsheets, and employee PII over the public internet to 3rd-party servers.<br>
+            • <strong>Private Self-Hosted Model (SageMaker / Private VPC)</strong>: Open-weights models (Llama 3 8B, Qwen 2.5, DeepSeek R1) execute strictly inside your company's AWS VPC. <strong>Zero external data egress</strong>, complete regulatory compliance (HIPAA, GDPR, SOC2), and full IP ownership!
+          </div>
+        </div>
+
+        <!-- CONCEPT 7: THE ENTERPRISE AI TRIAD -->
+        <div class="card" style="border: 1px solid #10b981; background: rgba(16, 185, 129, 0.05); margin-top: 14px;">
+          <div class="card-title" style="color: #10b981; font-size: 13px; font-weight: 700;">
+            🎯 7. The Enterprise AI Triad: Fine-Tuning vs. RAG vs. Prompt Engineering
+          </div>
+          <div class="card-desc" style="font-size: 11px; color: #cbd5e1; line-height: 1.6;">
+            • <strong>Prompt Engineering (Context)</strong>: Best for general tasks and simple instructions. Zero training required ($0 cost).<br>
+            • <strong>RAG - Retrieval-Augmented Generation (Knowledge)</strong>: Best for dynamic, rapidly changing company documents (PDFs, spreadsheets, knowledge bases). Ingests data into S3/Vector DB with no model weights modification.<br>
+            • <strong>QLoRA Fine-Tuning (Behavior &amp; Domain Expertise)</strong>: Best for teaching new syntax, strict brand tone, specialized acronyms, and formatting outputs (JSON/SQL). Trains small adapter weights (~14MB).
+          </div>
+        </div>
+
+        <!-- CONCEPT 8: QUANTIZATION & INSTRUCTION TUNING -->
+        <div class="card" style="border: 1px solid #a855f7; background: rgba(168, 85, 247, 0.05); margin-top: 14px;">
+          <div class="card-title" style="color: #c084fc; font-size: 13px; font-weight: 700;">
+            ⚡ 8. Quantization (FP32 ➔ INT4) &amp; Instruction Tuning (SFT vs. DPO)
+          </div>
+          <div class="card-desc" style="font-size: 11px; color: #cbd5e1; line-height: 1.6;">
+            • <strong>Quantization</strong>: Compresses 32-bit floating point parameters to 4-bit NormalFloat integers. Drops memory requirements by <strong>75%</strong> (32GB ➔ 4.8GB), allowing 8B models to run on $0.00 Serverless or local laptops with 99%+ accuracy retention!<br>
+            • <strong>Supervised Fine-Tuning (SFT)</strong>: Uses prompt-response pairs to teach the model company policies.<br>
+            • <strong>Direct Preference Optimization (DPO)</strong>: Aligns model outputs based on positive vs. negative company rating preferences.
           </div>
         </div>
       </div>
@@ -3574,6 +3862,7 @@ def handler(event, context):
     window.addEventListener('DOMContentLoaded', () => {
       loadActiveRagDocuments();
       initColumnResizers();
+      selectQuantPrecision('int4');
     });
 
     const MODULE_NODES_CONFIG = {
@@ -4142,6 +4431,166 @@ def handler(event, context):
         if (paneFriendly) paneFriendly.style.display = 'none';
         if (paneJson) paneJson.style.display = 'block';
       }
+    }
+
+    function selectQuantPrecision(prec) {
+      ['fp32', 'fp16', 'int8', 'int4'].forEach(p => {
+        const btn = document.getElementById('btn-quant-' + p);
+        if (btn) {
+          if (p === prec) {
+            btn.style.background = (p === 'fp32') ? 'rgba(239, 68, 68, 0.25)' : (p === 'fp16' ? 'rgba(245, 158, 11, 0.25)' : (p === 'int8' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(16, 185, 129, 0.25)'));
+            btn.style.borderColor = (p === 'fp32') ? '#ef4444' : (p === 'fp16' ? '#f59e0b' : (p === 'int8' ? '#38bdf8' : '#10b981'));
+            btn.style.color = (p === 'fp32') ? '#ef4444' : (p === 'fp16' ? '#f59e0b' : (p === 'int8' ? '#38bdf8' : '#10b981'));
+            btn.style.fontWeight = '700';
+          } else {
+            btn.style.background = '#1e293b';
+            btn.style.borderColor = 'var(--border-color)';
+            btn.style.color = '#94a3b8';
+            btn.style.fontWeight = '400';
+          }
+        }
+      });
+
+      const title = document.getElementById('quant-bit-title');
+      const formula = document.getElementById('quant-bit-formula');
+      const display = document.getElementById('quant-bit-display');
+      const legend = document.getElementById('quant-legend');
+      const vramText = document.getElementById('quant-vram-text');
+      const barFill = document.getElementById('quant-bar-fill');
+      const speedText = document.getElementById('quant-speed-text');
+      const accText = document.getElementById('quant-acc-text');
+      const costText = document.getElementById('quant-cost-text');
+
+      if (prec === 'fp32') {
+        if (title) title.innerText = 'FP32 Full Precision Floating Point (32 Bits / 4 Bytes):';
+        if (formula) formula.innerText = 'W = (-1)^s × 2^(e-127) × (1 + m)';
+        if (vramText) { vramText.innerText = '32.0 GB (OOM Crash on Standard Cloud GPUs!)'; vramText.style.color = '#ef4444'; }
+        if (barFill) { barFill.style.width = '100%'; barFill.style.background = '#ef4444'; }
+        if (speedText) { speedText.innerText = '18 tok/s (1.0x Baseline)'; speedText.style.color = '#ef4444'; }
+        if (accText) { accText.innerText = '100% (Baseline Reference)'; accText.style.color = '#94a3b8'; }
+        if (costText) { costText.innerText = '~$12.50/hr (Needs Multi-GPU)'; costText.style.color = '#ef4444'; }
+
+        let bitsHtml = '<div class="quant-bit-box quant-bit-sign" title="Sign (1 bit)">S</div>';
+        for (let i = 0; i < 8; i++) bitsHtml += '<div class="quant-bit-box quant-bit-exp" title="Exponent bit">E</div>';
+        for (let i = 0; i < 23; i++) bitsHtml += '<div class="quant-bit-box quant-bit-mantissa" title="Mantissa bit">M</div>';
+        if (display) display.innerHTML = bitsHtml;
+        if (legend) legend.innerHTML = '<span style="color:#ef4444;">■ Sign (1b)</span> <span style="color:#f59e0b;">■ Exponent (8b)</span> <span style="color:#38bdf8;">■ Mantissa (23b)</span>';
+
+      } else if (prec === 'fp16') {
+        if (title) title.innerText = 'FP16 Half Precision Floating Point (16 Bits / 2 Bytes):';
+        if (formula) formula.innerText = 'W = (-1)^s × 2^(e-15) × (1 + m)';
+        if (vramText) { vramText.innerText = '16.0 GB (Requires Expensive NVIDIA A10G 24GB)'; vramText.style.color = '#f59e0b'; }
+        if (barFill) { barFill.style.width = '50%'; barFill.style.background = '#f59e0b'; }
+        if (speedText) { speedText.innerText = '32 tok/s (1.8x Speedup)'; speedText.style.color = '#f59e0b'; }
+        if (accText) { accText.innerText = '99.8% (Negligible Loss)'; accText.style.color = '#38bdf8'; }
+        if (costText) { costText.innerText = '~$1.00/hr (~$720/mo 24/7)'; costText.style.color = '#f59e0b'; }
+
+        let bitsHtml = '<div class="quant-bit-box quant-bit-sign" title="Sign (1 bit)">S</div>';
+        for (let i = 0; i < 5; i++) bitsHtml += '<div class="quant-bit-box quant-bit-exp" title="Exponent bit">E</div>';
+        for (let i = 0; i < 10; i++) bitsHtml += '<div class="quant-bit-box quant-bit-mantissa" title="Mantissa bit">M</div>';
+        if (display) display.innerHTML = bitsHtml;
+        if (legend) legend.innerHTML = '<span style="color:#ef4444;">■ Sign (1b)</span> <span style="color:#f59e0b;">■ Exponent (5b)</span> <span style="color:#38bdf8;">■ Mantissa (10b)</span>';
+
+      } else if (prec === 'int8') {
+        if (title) title.innerText = 'INT8 Quantized Symmetric Integer (8 Bits / 1 Byte):';
+        if (formula) formula.innerText = 'W = Scale × Quant_Int8 [-128..127]';
+        if (vramText) { vramText.innerText = '8.0 GB (Fits in standard NVIDIA T4 16GB GPU)'; vramText.style.color = '#38bdf8'; }
+        if (barFill) { barFill.style.width = '25%'; barFill.style.background = '#38bdf8'; }
+        if (speedText) { speedText.innerText = '45 tok/s (2.5x Speedup)'; speedText.style.color = '#38bdf8'; }
+        if (accText) { accText.innerText = '99.6% (Near-Zero Loss)'; accText.style.color = '#34d399'; }
+        if (costText) { costText.innerText = '~$0.53/hr (~$380/mo)'; costText.style.color = '#38bdf8'; }
+
+        let bitsHtml = '';
+        for (let i = 0; i < 8; i++) bitsHtml += '<div class="quant-bit-box quant-bit-int" style="background:#38bdf8; box-shadow:0 0 6px rgba(56,189,248,0.7);" title="8-Bit Integer Quant Value">Q</div>';
+        if (display) display.innerHTML = bitsHtml;
+        if (legend) legend.innerHTML = '<span style="color:#38bdf8;">■ Quantized Integer (8 Bits)</span> <span style="color:#94a3b8;">+ FP16 Scale Factor</span>';
+
+      } else if (prec === 'int4') {
+        if (title) title.innerText = 'INT4 NormalFloat4 / GGUF / AWQ (4 Bits / 0.5 Byte):';
+        if (formula) formula.innerText = 'W = Scale × NF4_Value + Zero_Point';
+        if (vramText) { vramText.innerText = '4.8 GB (Fits in Laptop & $0.00 SageMaker Serverless!)'; vramText.style.color = '#10b981'; }
+        if (barFill) { barFill.style.width = '15%'; barFill.style.background = '#10b981'; }
+        if (speedText) { speedText.innerText = '68 tok/s (3.8x Speedup)'; speedText.style.color = '#34d399'; }
+        if (accText) { accText.innerText = '99.2% (99%+ Accuracy)'; accText.style.color = '#34d399'; }
+        if (costText) { costText.innerText = '$0.00 Idle (Serverless/Local)'; costText.style.color = '#10b981'; }
+
+        let bitsHtml = '';
+        for (let i = 0; i < 4; i++) bitsHtml += '<div class="quant-bit-box quant-bit-int" style="background:#10b981; width:22px; height:26px; font-size:11px; box-shadow:0 0 10px rgba(16,185,129,0.8);" title="4-Bit NF4 Quant Value">Q</div>';
+        if (display) display.innerHTML = bitsHtml;
+        if (legend) legend.innerHTML = '<span style="color:#10b981;">■ Quantized NF4 / GGUF (4 Bits)</span> <span style="color:#34d399;">+ Double Quantization Scale</span>';
+      }
+    }
+
+    function toggleQaAccordion(header) {
+      const body = header.nextElementSibling;
+      const arrow = header.querySelector('span:last-child');
+      if (body) {
+        if (body.classList.contains('open')) {
+          body.classList.remove('open');
+          if (arrow) arrow.innerText = '▼';
+        } else {
+          body.classList.add('open');
+          if (arrow) arrow.innerText = '▲';
+        }
+      }
+    }
+
+    function loadCompanyPreset(type) {
+      const sysInput = document.getElementById('ft-system-prompt');
+      const usrInput = document.getElementById('ft-user-input');
+      const tgtInput = document.getElementById('ft-target-output');
+      const beforeText = document.getElementById('ft-before-text');
+
+      if (type === 'hr') {
+        if (sysInput) sysInput.value = "You are AcctCorp's internal HR Policy & Operations Expert.";
+        if (usrInput) usrInput.value = "What is AcctCorp's policy on remote work expense reimbursements?";
+        if (tgtInput) tgtInput.value = "Per AcctCorp 2026 Policy Section 4.2: Full-time employees are entitled to $150/month home office internet and equipment reimbursement submitted via the internal ERP portal by the 25th of each month.";
+        if (beforeText) beforeText.innerText = '"I am a general open-source AI assistant. I do not have access to AcctCorp internal HR policy handbook."';
+      } else if (type === 'refund') {
+        if (sysInput) sysInput.value = "You are AcctCorp's Billing & Digital Services Assistant.";
+        if (usrInput) usrInput.value = "Can I get an immediate refund on my enterprise Prime upgrade?";
+        if (tgtInput) tgtInput.value = "Per AcctCorp Billing Guidelines: All Prime upgrades and digital services requested within 24 hours are 100% eligible for immediate automated refund back to the original corporate payment method.";
+        if (beforeText) beforeText.innerText = '"I am a generic language model. Refund policies vary by merchant and terms of service."';
+      } else if (type === 'legal') {
+        if (sysInput) sysInput.value = "You are AcctCorp's Legal Compliance & NDA Assistant.";
+        if (usrInput) usrInput.value = "Can I share the confidential project blueprint with external vendors?";
+        if (tgtInput) tgtInput.value = "Per AcctCorp Legal Compliance Policy 2026: No confidential project blueprints may be shared with external third parties without an executed Mutual NDA and written VP approval.";
+        if (beforeText) beforeText.innerText = '"I cannot advise on legal matters or private corporate confidentiality agreements."';
+      }
+      showToast('Company Preset Loaded', `Loaded '${type.toUpperCase()}' training scenario!`, 'info');
+    }
+
+    async function runMlOpsPipelineFull() {
+      const badge = document.getElementById('mlops-status-badge');
+      const out = document.getElementById('mlops-pipeline-output');
+      if (badge) { badge.innerText = 'Status: Executing 6 Stages...'; badge.style.color = '#38bdf8'; }
+
+      const stageIds = ['mlops-stage-1', 'mlops-stage-2', 'mlops-stage-3', 'mlops-stage-4', 'mlops-stage-5', 'mlops-stage-6'];
+      stageIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.classList.remove('mlops-stage-active', 'mlops-stage-passed'); }
+      });
+
+      const steps = [
+        { idx: 0, text: '[Stage 1/6] Ingesting & formatting 1,250 company policy documents to s3://agentic-mcp-training-data/dataset.jsonl...' },
+        { idx: 1, text: '[Stage 2/6] Running EventBridge Data Drift & KS-Test validation -> KS Score: 0.012 (Data Drift: NONE, Quality: 99.8%)...' },
+        { idx: 2, text: '[Stage 3/6] Starting QLoRA 4-bit NF4 Spot GPU Retraining (Epoch 1: 2.45 -> Epoch 2: 1.24 -> Epoch 3: 0.2814 Loss)...' },
+        { idx: 3, text: '[Stage 4/6] Automated Benchmark Evaluation -> ROUGE-L: 0.892 | BLEU: 0.814 | Hallucination Rate: 0.02% (PASSED)...' },
+        { idx: 4, text: '[Stage 5/6] Registering Model Package in SageMaker Model Registry -> ARN: arn:aws:sagemaker:us-east-1:123456789012:model-package/AcctCorp-Llama3-v1.0.0-PROD...' },
+        { idx: 5, text: '[Stage 6/6] Zero-downtime Serverless Endpoint Deployment Complete! Endpoint Status: IN_SERVICE (Private VPC, $0.00 Idle Cost).' }
+      ];
+
+      for (let s of steps) {
+        const el = document.getElementById(stageIds[s.idx]);
+        if (el) { el.classList.add('mlops-stage-active'); }
+        if (out) { out.innerText += '\n' + s.text; out.scrollTop = out.scrollHeight; }
+        await new Promise(r => setTimeout(r, 700));
+        if (el) { el.classList.remove('mlops-stage-active'); el.classList.add('mlops-stage-passed'); }
+      }
+
+      if (badge) { badge.innerText = 'Status: Model Deployed (InService)'; badge.style.color = '#10b981'; }
+      showToast('MLOps Pipeline Succeeded', 'Private Model successfully fine-tuned, registered, and deployed in VPC!', 'success');
+      addLog('MLOPS OK', 'tag-mcp', 'Automated 6-stage retraining and serverless deployment pipeline completed successfully.');
     }
 
     function simulateFriendlyFineTuning() {
