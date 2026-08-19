@@ -497,13 +497,28 @@ def handle_deploy(payload):
             cfn = boto3.client('cloudformation', region_name=region)
 
         stack_exists = False
+        stack_status = ""
         try:
-            cfn.describe_stacks(StackName=STACK_NAME)
-            stack_exists = True
+            desc = cfn.describe_stacks(StackName=STACK_NAME)
+            stacks = desc.get('Stacks', [])
+            if stacks:
+                stack_status = stacks[0].get('StackStatus', '')
+                if stack_status not in ['DELETE_COMPLETE']:
+                    stack_exists = True
         except ClientError:
             stack_exists = False
 
-        print(f"[CFN_DEPLOY] Stack deploy started for {STACK_NAME} ({clean_desc})", flush=True)
+        print(f"[CFN_DEPLOY] Stack deploy started for {STACK_NAME} ({clean_desc}) - Current Status: {stack_status}", flush=True)
+
+        if stack_status in ['ROLLBACK_COMPLETE', 'ROLLBACK_FAILED', 'CREATE_FAILED']:
+            print(f"[CFN_DEPLOY] Stack is in {stack_status}. Purging and deleting failed stack first...", flush=True)
+            try:
+                cfn.delete_stack(StackName=STACK_NAME)
+                waiter = cfn.get_waiter('stack_delete_complete')
+                waiter.wait(StackName=STACK_NAME, WaiterConfig={'Delay': 3, 'MaxAttempts': 30})
+            except Exception as del_err:
+                print(f"[CFN_DEPLOY_PURGE_WARN] {str(del_err)}", flush=True)
+            stack_exists = False
 
         if stack_exists:
             res = cfn.update_stack(
