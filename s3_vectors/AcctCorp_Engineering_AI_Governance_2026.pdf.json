@@ -1,8 +1,0 @@
-{
-  "filename": "AcctCorp_Engineering_AI_Governance_2026.pdf",
-  "chunks": [
-    "Section 1.1 [Model Context Protocol (MCP) Standards]: All AI Agent tool executions must strictly follow the Model Context Protocol (MCP) JSON-RPC standard. MCP servers run on AWS Lambda within private VPC subnets, authenticating calls via Amazon Cognito JWT Bearer tokens.",
-    "Section 2.1 [Private Self-Hosted Model Retraining (QLoRA)]: Supervised Fine-Tuning (SFT) is executed on AWS SageMaker using 4-bit NormalFloat (NF4) quantization with LoRA rank r=16 and alpha=32. All trained adapters are versioned and tagged in AWS SageMaker Model Registry.",
-    "Section 3.1 [Multi-Model Routing Policy]: High-throughput low-latency tasks route through Amazon Bedrock Nova Micro ($0.035/1M tokens), while sensitive proprietary payroll and NDA queries route strictly to private self-hosted SageMaker Serverless endpoints ($0.00 idle cost)."
-  ]
-}

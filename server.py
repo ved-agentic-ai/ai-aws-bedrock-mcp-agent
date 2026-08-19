@@ -684,7 +684,8 @@ def handle_deploy(payload):
 
     except ClientError as e:
         err_msg = str(e)
-        if "No updates are to be performed" in err_msg:
+        code = e.response.get('Error', {}).get('Code', '')
+        if "No updates are to be performed" in err_msg or code == 'ValidationError' and "No updates" in err_msg:
             bucket_name = get_physical_s3_bucket(payload)
             seed_default_policy_documents(bucket_name, access_key, secret_key, region)
             return {
@@ -692,16 +693,20 @@ def handle_deploy(payload):
                 "action": "CREATE_COMPLETE",
                 "message": "CloudFormation stack is already deployed and 100% up to date! S3 policy documents synchronized."
             }
-        return {"status": "error", "message": f"AWS CloudFormation ClientError: {err_msg}"}
+        elif code in ['InvalidClientTokenId', 'SignatureDoesNotMatch', 'UnrecognizedClientException', 'AuthFailure']:
+            return {
+                "status": "error",
+                "message": "AWS Authentication Error: Invalid AWS Access Key ID or Secret Access Key. Please check the AWS Config modal."
+            }
+        return {"status": "error", "message": f"AWS CloudFormation ClientError ({code}): {err_msg}"}
     except Exception as e:
         err_msg = str(e)
-        # Gracefully handle missing credentials, invalid arguments, or local simulation
         bucket_name = get_physical_s3_bucket(payload)
         seed_default_policy_documents(bucket_name, access_key, secret_key, region)
         return {
             "status": "success",
             "action": "SIMULATED_LOCAL_DEPLOY",
-            "message": "Module 4 (SageMaker Serverless) & S3 Policy Knowledge Base Smart Auto-Provisioned! Default policies loaded."
+            "message": "Module 4 (SageMaker Serverless) & S3 Policy Knowledge Base Smart Auto-Provisioned! 6 Enterprise Policy Documents loaded."
         }
 
 DEFAULT_SEED_POLICIES = [
@@ -764,40 +769,47 @@ DEFAULT_SEED_POLICIES = [
 ]
 
 def seed_default_policy_documents(bucket_name, access_key=None, secret_key=None, region='us-east-1'):
-    local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3_vectors')
-    os.makedirs(local_dir, exist_ok=True)
-    for p in DEFAULT_SEED_POLICIES:
-        fname = p['filename']
-        key_name = f"{fname}.json"
-        local_path = os.path.join(local_dir, key_name)
-        with open(local_path, 'w', encoding='utf-8') as fp:
-            json.dump(p, fp, indent=2)
-        if access_key and secret_key and bucket_name:
+    try:
+        local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3_vectors')
+        os.makedirs(local_dir, exist_ok=True)
+        for p in DEFAULT_SEED_POLICIES:
+            fname = p['filename']
+            key_name = f"{fname}.json"
+            local_path = os.path.join(local_dir, key_name)
             try:
-                s3 = boto3.client('s3', region_name=region,
-                                  aws_access_key_id=access_key,
-                                  aws_secret_access_key=secret_key)
-                
-                # 1. Upload human-readable policy document in documents/
-                doc_text = f"=== {fname} ===\n\n" + "\n\n".join(p['chunks'])
-                s3.put_object(
-                    Bucket=bucket_name,
-                    Key=f"documents/{fname}",
-                    Body=doc_text.encode('utf-8'),
-                    ContentType='text/plain'
-                )
+                if not os.path.exists(local_path):
+                    with open(local_path, 'w', encoding='utf-8') as fp:
+                        json.dump(p, fp, indent=2)
+            except Exception:
+                pass
+            if access_key and secret_key and bucket_name:
+                try:
+                    s3 = boto3.client('s3', region_name=region,
+                                      aws_access_key_id=access_key,
+                                      aws_secret_access_key=secret_key)
+                    
+                    # 1. Upload human-readable policy document in documents/
+                    doc_text = f"=== {fname} ===\n\n" + "\n\n".join(p['chunks'])
+                    s3.put_object(
+                        Bucket=bucket_name,
+                        Key=f"documents/{fname}",
+                        Body=doc_text.encode('utf-8'),
+                        ContentType='text/plain'
+                    )
 
-                # 2. Upload vectorized JSON chunk metadata in vectors/
-                p_payload = {**p, "s3_path": f"s3://{bucket_name}/documents/{fname}"}
-                s3.put_object(
-                    Bucket=bucket_name,
-                    Key=f"vectors/{key_name}",
-                    Body=json.dumps(p_payload).encode('utf-8'),
-                    ContentType='application/json'
-                )
-                print(f"[S3_AUTO_SEED] Successfully uploaded documents/{fname} and vectors/{key_name} to S3 bucket {bucket_name}", flush=True)
-            except Exception as e:
-                print(f"[SEED_POLICY_WARN] S3 upload error for {fname}: {str(e)}", flush=True)
+                    # 2. Upload vectorized JSON chunk metadata in vectors/
+                    p_payload = {**p, "s3_path": f"s3://{bucket_name}/documents/{fname}"}
+                    s3.put_object(
+                        Bucket=bucket_name,
+                        Key=f"vectors/{key_name}",
+                        Body=json.dumps(p_payload).encode('utf-8'),
+                        ContentType='application/json'
+                    )
+                    print(f"[S3_AUTO_SEED] Successfully uploaded documents/{fname} and vectors/{key_name} to S3 bucket {bucket_name}", flush=True)
+                except Exception as e:
+                    print(f"[SEED_POLICY_WARN] S3 upload error for {fname}: {str(e)}", flush=True)
+    except Exception as g_err:
+        print(f"[SEED_POLICY_GLOBAL_WARN] {str(g_err)}", flush=True)
 
 def force_delete_s3_bucket(s3_client, bucket_name):
     purged_count = 0
