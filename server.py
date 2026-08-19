@@ -509,7 +509,7 @@ def handle_deploy(payload):
             res = cfn.update_stack(
                 StackName=STACK_NAME,
                 TemplateBody=template_body,
-                Capabilities=['CAPABILITY_IAM'],
+                Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
                 Parameters=[
                     {'ParameterKey': 'BedrockModelId', 'ParameterValue': model_id}
                 ]
@@ -519,7 +519,7 @@ def handle_deploy(payload):
             res = cfn.create_stack(
                 StackName=STACK_NAME,
                 TemplateBody=template_body,
-                Capabilities=['CAPABILITY_IAM'],
+                Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
                 Parameters=[
                     {'ParameterKey': 'BedrockModelId', 'ParameterValue': model_id}
                 ]

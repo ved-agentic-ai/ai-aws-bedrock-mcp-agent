@@ -162,12 +162,13 @@
 
     /* LEFT COL: PIPELINE & CHAT INTERACTION */
     .chat-col {
-      flex: 1.2;
+      flex: 1.1 1 360px;
       display: flex;
       flex-direction: column;
       border-right: 1px solid var(--border-color);
       background: var(--bg-dark);
-      min-width: 0;
+      min-width: 280px;
+      box-sizing: border-box;
     }
 
     /* SCREENSHOT EXACT MATCH DASHBOARD STYLES */
@@ -908,13 +909,25 @@
     .tag-dynamo { background: rgba(255, 153, 0, 0.2); color: #fbbf24; }
     .log-msg { color: var(--text-muted); flex: 1; }
 
+    /* MIDDLE COL: DUAL LOG STREAMS PANEL */
+    .terminal-col {
+      flex: 1 1 340px;
+      display: flex;
+      flex-direction: column;
+      background: #060a14;
+      border-right: 1px solid var(--border-color);
+      min-width: 260px;
+      box-sizing: border-box;
+    }
+
     /* RIGHT COL: INSPECTOR & ARCHITECTURE */
     .inspector-col {
-      flex: 1.1;
+      flex: 1.1 1 380px;
       display: flex;
       flex-direction: column;
       background: #0b1120;
-      min-width: 0;
+      min-width: 300px;
+      box-sizing: border-box;
     }
 
     /* CUSTOM SLEEK SCROLLBARS */
@@ -1598,16 +1611,16 @@
           <button class="btn-col-ctl" title="Reset 3-Column Split View" onclick="resetColLayout()">⟳</button>
         </div>
       </div>
-      <!-- STREAM 1: REAL-TIME PROTOCOL EVENT STREAM (COLLAPSIBLE, DEFAULT COLLAPSED) -->
-      <div style="flex: 1; display: flex; flex-direction: column; border-bottom: 1px solid var(--border-color); min-height: 0;">
+      <!-- STREAM 1: REAL-TIME PROTOCOL EVENT STREAM (COLLAPSIBLE) -->
+      <div id="stream-1-wrapper" style="flex: 1; display: flex; flex-direction: column; border-bottom: 1px solid var(--border-color); min-height: 42px;">
         <div class="terminal-header" style="cursor: pointer; user-select: none;" onclick="toggleLogStream('protocol')">
           <div style="display: flex; align-items: center; gap: 6px;">
             <span>📜 REAL-TIME PROTOCOL EVENT STREAM</span>
-            <span id="protocol-stream-arrow" style="font-size: 10px; color: #38bdf8; font-weight: 700; background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">▼ Expand Stream</span>
+            <span id="protocol-stream-arrow" style="font-size: 10px; color: #38bdf8; font-weight: 700; background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">▲ Collapse Stream</span>
           </div>
           <button class="clear-logs-btn" onclick="event.stopPropagation(); clearProtocolLogs()">Clear Logs</button>
         </div>
-        <div class="terminal-logs" id="protocol-log-stream" style="display: none; flex: 1; overflow-y: auto;">
+        <div class="terminal-logs" id="protocol-log-stream" style="flex: 1; overflow-y: auto;">
           <div class="log-line">
             <span class="log-time">16:00:00</span>
             <span class="log-tag tag-system">SYSTEM</span>
@@ -1626,16 +1639,16 @@
         </div>
       </div>
 
-      <!-- STREAM 2: REALTIME CLOUDWATCH & SYSTEM LOG STREAM (COLLAPSIBLE, DEFAULT COLLAPSED) -->
-      <div style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+      <!-- STREAM 2: REALTIME CLOUDWATCH & SYSTEM LOG STREAM (COLLAPSIBLE) -->
+      <div id="stream-2-wrapper" style="flex: 1; display: flex; flex-direction: column; min-height: 42px;">
         <div class="terminal-header" style="cursor: pointer; user-select: none;" onclick="toggleLogStream('cloudwatch')">
           <div style="display: flex; align-items: center; gap: 6px;">
             <span>⚡ REALTIME CLOUDWATCH &amp; SYSTEM LOGS</span>
-            <span id="cw-stream-arrow" style="font-size: 10px; color: #38bdf8; font-weight: 700; background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">▼ Expand Stream</span>
+            <span id="cw-stream-arrow" style="font-size: 10px; color: #38bdf8; font-weight: 700; background: #0f172a; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.3);">▲ Collapse Stream</span>
           </div>
           <button class="clear-logs-btn" onclick="event.stopPropagation(); clearCloudWatchLogs()">Clear Logs</button>
         </div>
-        <div class="terminal-logs" id="terminal-stream" style="display: none; flex: 1; overflow-y: auto;">
+        <div class="terminal-logs" id="terminal-stream" style="flex: 1; overflow-y: auto;">
           <div class="log-line">
             <span class="log-time">17:12:00</span>
             <span class="log-tag tag-gateway">SYSTEM</span>
@@ -4898,10 +4911,15 @@ def handler(event, context):
     function toggleLogStream(type, forceState) {
       const el = (type === 'protocol') ? document.getElementById('protocol-log-stream') : document.getElementById('terminal-stream');
       const arrow = (type === 'protocol') ? document.getElementById('protocol-stream-arrow') : document.getElementById('cw-stream-arrow');
+      const wrapper = (type === 'protocol') ? document.getElementById('stream-1-wrapper') : document.getElementById('stream-2-wrapper');
       if (!el) return;
       const isHidden = (el.style.display === 'none');
       const nextState = (forceState !== undefined) ? forceState : isHidden;
-      el.style.display = nextState ? 'block' : 'none';
+      el.style.display = nextState ? 'flex' : 'none';
+      if (wrapper) {
+        wrapper.style.flex = nextState ? '1' : '0 0 auto';
+        wrapper.style.height = nextState ? 'auto' : '42px';
+      }
       if (arrow) arrow.innerText = nextState ? '▲ Collapse Stream' : '▼ Expand Stream';
     }
 
