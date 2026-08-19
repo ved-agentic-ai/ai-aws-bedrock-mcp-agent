@@ -433,38 +433,156 @@
     }
 
     .msg.user { align-self: flex-end; }
-    .msg.assistant { align-self: flex-start; }
+    .msg.assistant { align-self: flex-start; max-width: 92%; }
 
     .msg-bubble {
-      padding: 14px 18px;
-      border-radius: 14px;
-      font-size: 13px;
-      line-height: 1.6;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-size: 13.5px;
+      line-height: 1.65;
       word-break: break-word;
     }
 
     .user .msg-bubble {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
       color: #ffffff;
-      border-bottom-right-radius: 2px;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35), 0 0 2px rgba(255, 255, 255, 0.4) inset;
+      font-weight: 500;
     }
 
     .assistant .msg-bubble {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      color: var(--text-main);
-      border-bottom-left-radius: 2px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(10, 16, 30, 0.96) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #f1f5f9;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 12px rgba(56, 189, 248, 0.08) inset;
+      position: relative;
+    }
+
+    .assistant .msg-bubble::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 16px;
+      right: 16px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #38bdf8, #818cf8, #34d399, transparent);
+      border-radius: 2px;
+    }
+
+    .msg-section-header {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #38bdf8;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 12px 0 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .msg-bullet-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin: 6px 0;
+      padding: 6px 10px;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 8px;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .msg-bullet-item:hover {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(56, 189, 248, 0.3);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .bullet-dot {
+      color: #38bdf8;
+      font-weight: 900;
+      font-size: 14px;
+      line-height: 1.4;
+      flex-shrink: 0;
+    }
+
+    .rag-table-wrapper {
+      overflow-x: auto;
+      margin: 12px 0;
+      border-radius: 8px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+
+    .rag-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    .rag-table th {
+      background: rgba(30, 58, 138, 0.4);
+      color: #38bdf8;
+      font-weight: 700;
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .rag-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      color: #cbd5e1;
+    }
+
+    .rag-table tr:hover td {
+      background: rgba(56, 189, 248, 0.05);
+    }
+
+    .badge-highlight-amount {
+      background: rgba(16, 185, 129, 0.18);
+      color: #34d399;
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .badge-highlight-time {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .badge-highlight-sec {
+      background: rgba(99, 102, 241, 0.18);
+      color: #a5b4fc;
+      border: 1px solid rgba(129, 140, 248, 0.35);
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 12px;
     }
 
     .msg-meta {
-      font-size: 10px;
+      font-size: 10.5px;
       color: var(--text-dim);
-      margin-top: 4px;
-      padding: 0 4px;
+      margin-top: 5px;
+      padding: 0 6px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
     .btn-save-item {
@@ -3544,15 +3662,51 @@ def handler(event, context):
       }
       if (!clean) clean = txt;
 
-      return clean
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/\n\n/g, '<br><br>')
-        .replace(/\n/g, '<br>');
+      // 1. Process Markdown Tables
+      clean = clean.replace(/((?:\|[^\n]+\|\r?\n)+)/g, function(tableMatch) {
+        const rows = tableMatch.trim().split('\n').filter(r => r.trim().startsWith('|'));
+        if (rows.length < 2) return tableMatch;
+        let html = '<div class="rag-table-wrapper"><table class="rag-table">';
+        let isHeader = true;
+        for (let r of rows) {
+          const cells = r.split('|').slice(1, -1).map(c => c.trim());
+          if (cells.every(c => /^[-:]+$/.test(c))) {
+            isHeader = false;
+            continue;
+          }
+          html += '<tr>';
+          for (let cell of cells) {
+            html += isHeader ? `<th>${cell}</th>` : `<td>${cell}</td>`;
+          }
+          html += '</tr>';
+          isHeader = false;
+        }
+        html += '</table></div>';
+        return html;
+      });
+
+      // 2. Parse Section Headers
+      clean = clean.replace(/^###\s+(.+)$/gm, '<div class="msg-section-header"><span>$1</span></div>');
+      clean = clean.replace(/^##\s+(.+)$/gm, '<div class="msg-section-header" style="font-size:15.5px;"><span>$1</span></div>');
+
+      // 3. Parse Bullet Points into card items
+      clean = clean.replace(/^[\u2022\*\-]\s+(.+)$/gm, '<div class="msg-bullet-item"><span class="bullet-dot">&#9679;</span><span>$1</span></div>');
+
+      // 4. Standard Inline Formattings
+      clean = clean
+        .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#f8fafc; font-weight:700;">$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em style="color:#94a3b8;">$1</em>')
+        .replace(/`([^`]+)`/g, '<code style="background:rgba(15,23,42,0.8); border:1px solid rgba(56,189,248,0.25); color:#38bdf8; padding:1px 5px; border-radius:4px; font-size:11.5px;">$1</code>');
+
+      // 5. Highlight Badges for Financials, Times, and Security
+      clean = clean.replace(/(\$[\d,]+(?:\.\d+)?(?:\/(?:month|mo|year|yr|day|job|mile))?)/g, '<span class="badge-highlight-amount">$1</span>');
+      clean = clean.replace(/(\b\d+(?:\.\d+)?%\b)/g, '<span class="badge-highlight-amount">$1</span>');
+      clean = clean.replace(/(\b(?:24 hours|16 weeks|8 weeks|2 weeks|30 days|Net-30|10:00 AM – 3:00 PM|10:00 to 15:00)\b)/gi, '<span class="badge-highlight-time">$1</span>');
+      clean = clean.replace(/(\b(?:Zero-Trust|AES-256|BitLocker|FileVault|YubiKey|ISO 27001|Private VPC)\b)/g, '<span class="badge-highlight-sec">$1</span>');
+
+      // Convert linebreaks
+      clean = clean.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+      return clean;
     }
 
     function executeQuickStep(stepDesc) {

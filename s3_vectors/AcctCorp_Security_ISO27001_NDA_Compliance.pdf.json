@@ -1,0 +1,9 @@
+{
+  "filename": "AcctCorp_Security_ISO27001_NDA_Compliance.pdf",
+  "chunks": [
+    "Section 1.1 [Zero-Trust Data Isolation & Private VPC]: All customer proprietary records, database transactions, and FAISS vector embeddings must strictly reside within private AWS VPC subnets with zero public egress. All data at rest is encrypted using AWS KMS AES-256 customer-managed keys.",
+    "Section 1.2 [Mandatory Endpoint Device Compliance]: All employee and contractor laptops must run CrowdStrike Falcon EDR, BitLocker/FileVault hardware full-disk encryption, and authenticate using FIDO2 YubiKey hardware MFA tokens.",
+    "Section 2.1 [Mutual Non-Disclosure & Intellectual Property]: All source code, algorithm weights, AI agent configurations, and financial forecasts are confidential company IP subject to a 5-year post-employment Non-Disclosure Agreement. Sharing data with public third-party LLMs without prior InfoSec approval is strictly prohibited.",
+    "Section 3.1 [Security Incident Response Classification & SLAs]: Security incidents are classified as P1 (Critical Breach: 15-minute response SLA), P2 (High Risk: 1-hour response SLA), P3 (Medium: 4-hour SLA), and P4 (Low: 24-hour SLA). All security events trigger automatic notifications to the Chief Information Security Officer."
+  ]
+}
