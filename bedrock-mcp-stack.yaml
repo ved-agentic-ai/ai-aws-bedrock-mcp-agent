@@ -541,14 +541,12 @@ Resources:
   SageMakerPrivateModel:
     Type: AWS::SageMaker::Model
     Properties:
-      ModelName: !Sub "${AWS::StackName}-PrivateLlama3Model"
       ExecutionRoleArn: !GetAtt SageMakerExecutionRole.Arn
       PrimaryContainer:
         Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310-ubuntu22.04"
         Environment:
           HF_MODEL_ID: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
           HF_TASK: "text-generation"
-          MODEL_NAME: "AcctCorp-Private-Llama3-8B-FineTuned"
 
 Outputs:
   ApiEndpoint:
