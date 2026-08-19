@@ -1,0 +1,8 @@
+{
+  "filename": "AcctCorp_Financial_Q1_2026_Operations_Report.xlsx",
+  "chunks": [
+    "Financial Metric [Annual Recurring Revenue (ARR)]: AcctCorp closed Q1 2026 with $42.8M ARR representing +34% Year-over-Year growth. Net Revenue Retention (NRR) achieved 124% with enterprise customer churn at a historic low of 1.2%.",
+    "Financial Metric [Cloud Infrastructure & AWS OpEx]: Total monthly AWS cloud infrastructure expenditure was $128,400, of which Bedrock and SageMaker AI inference accounted for $14,200 (11.0% of total spend). Automated Spot GPU training saved $48,000 in R&D costs.",
+    "Financial Metric [R&D & Engineering Headcount]: Engineering organization headcount stands at 184 full-time engineers with an allocated Q1 R&D innovation budget of $4.2M focused on agentic AI workflows and private VPC model hosting."
+  ]
+}
