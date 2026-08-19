@@ -873,6 +873,11 @@ def handle_status(payload):
                 "timestamp": str(ev.get('Timestamp'))
             })
 
+        if stack_status in ['CREATE_COMPLETE', 'UPDATE_COMPLETE']:
+            bucket_name = outputs.get('S3BucketName')
+            if bucket_name:
+                seed_default_policy_documents(bucket_name, access_key, secret_key, region)
+
         return {
             "status": stack_status,
             "outputs": outputs,
@@ -885,10 +890,16 @@ def handle_status(payload):
         return {"status": "ERROR", "message": str(e)}
 
 def get_physical_s3_bucket(payload):
+    # 0. Direct payload override
+    direct_b = payload.get('bucket_name')
+    if direct_b and not direct_b.startswith('agentic-mcp-knowledge-base'):
+        return direct_b
+
     access_key = payload.get('access_key')
     secret_key = payload.get('secret_key')
     region = payload.get('region', 'us-east-1')
 
+    # 1. Check CloudFormation Stack Outputs
     try:
         if access_key and secret_key:
             cfn = boto3.client('cloudformation', region_name=region,
@@ -906,6 +917,42 @@ def get_physical_s3_bucket(payload):
                 return bucket
     except Exception:
         pass
+
+    # 2. Check CloudFormation Stack Resources (PhysicalResourceId)
+    try:
+        if access_key and secret_key:
+            cfn = boto3.client('cloudformation', region_name=region,
+                               aws_access_key_id=access_key,
+                               aws_secret_access_key=secret_key)
+        else:
+            cfn = boto3.client('cloudformation', region_name=region)
+
+        res_list = cfn.describe_stack_resources(StackName=STACK_NAME).get('StackResources', [])
+        for r in res_list:
+            if r.get('ResourceType') == 'AWS::S3::Bucket' or r.get('LogicalResourceId') == 'AgentKnowledgeBucket':
+                phys_id = r.get('PhysicalResourceId')
+                if phys_id:
+                    return phys_id
+    except Exception:
+        pass
+
+    # 3. Discover from real AWS Account via s3.list_buckets()
+    try:
+        if access_key and secret_key:
+            s3 = boto3.client('s3', region_name=region,
+                              aws_access_key_id=access_key,
+                              aws_secret_access_key=secret_key)
+        else:
+            s3 = boto3.client('s3', region_name=region)
+
+        all_b = s3.list_buckets().get('Buckets', [])
+        for b in all_b:
+            b_name = b.get('Name', '')
+            if STACK_NAME.lower() in b_name.lower() or 'agentknowledgebucket' in b_name.lower():
+                return b_name
+    except Exception:
+        pass
+
     return f"agentic-mcp-knowledge-base-{region}"
 
 def handle_s3_bucket(payload):
