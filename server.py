@@ -28,7 +28,7 @@ def app(environ, start_response):
         ])
         return [content]
 
-    if path == '/api/s3/documents':
+    if method == 'GET' and path == '/api/s3/documents':
         res_data = handle_s3_documents_list({})
         body_bytes = json.dumps(res_data).encode('utf-8')
         start_response('200 OK', [
@@ -79,7 +79,8 @@ def app(environ, start_response):
         start_response('200 OK', [
             ('Content-Type', 'application/json'),
             ('Content-Length', str(len(body_bytes))),
-            ('Access-Control-Allow-Origin', '*')
+            ('Access-Control-Allow-Origin', '*'),
+            ('Connection', 'close')
         ])
         return [body_bytes]
 
@@ -87,7 +88,8 @@ def app(environ, start_response):
         start_response('200 OK', [
             ('Access-Control-Allow-Origin', '*'),
             ('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'),
-            ('Access-Control-Allow-Headers', 'Content-Type')
+            ('Access-Control-Allow-Headers', 'Content-Type'),
+            ('Connection', 'close')
         ])
         return [b'']
 
