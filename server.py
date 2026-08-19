@@ -613,14 +613,27 @@ def seed_default_policy_documents(bucket_name, access_key=None, secret_key=None,
                 s3 = boto3.client('s3', region_name=region,
                                   aws_access_key_id=access_key,
                                   aws_secret_access_key=secret_key)
+                
+                # 1. Upload human-readable policy document in documents/
+                doc_text = f"=== {fname} ===\n\n" + "\n\n".join(p['chunks'])
+                s3.put_object(
+                    Bucket=bucket_name,
+                    Key=f"documents/{fname}",
+                    Body=doc_text.encode('utf-8'),
+                    ContentType='text/plain'
+                )
+
+                # 2. Upload vectorized JSON chunk metadata in vectors/
+                p_payload = {**p, "s3_path": f"s3://{bucket_name}/documents/{fname}"}
                 s3.put_object(
                     Bucket=bucket_name,
                     Key=f"vectors/{key_name}",
-                    Body=json.dumps(p).encode('utf-8'),
+                    Body=json.dumps(p_payload).encode('utf-8'),
                     ContentType='application/json'
                 )
+                print(f"[S3_AUTO_SEED] Successfully uploaded documents/{fname} and vectors/{key_name} to S3 bucket {bucket_name}", flush=True)
             except Exception as e:
-                print(f"[SEED_POLICY_WARN] {str(e)}", flush=True)
+                print(f"[SEED_POLICY_WARN] S3 upload error for {fname}: {str(e)}", flush=True)
 
 def force_delete_s3_bucket(s3_client, bucket_name):
     purged_count = 0
@@ -1111,7 +1124,16 @@ def handle_s3_documents_list(payload):
                               aws_access_key_id=access_key,
                               aws_secret_access_key=secret_key)
             objs = s3.list_objects_v2(Bucket=bucket_name, Prefix="vectors/")
-            for item in objs.get('Contents', []):
+            contents = objs.get('Contents', [])
+            
+            # If bucket is newly created and empty, auto-seed immediately!
+            if not contents:
+                print(f"[S3_SEED_TRIGGER] Bucket {bucket_name} is empty. Seeding company policies to AWS S3...", flush=True)
+                seed_default_policy_documents(bucket_name, access_key, secret_key, region)
+                objs = s3.list_objects_v2(Bucket=bucket_name, Prefix="vectors/")
+                contents = objs.get('Contents', [])
+
+            for item in contents:
                 key = item['Key']
                 if key.endswith('.json'):
                     try:
@@ -1122,14 +1144,13 @@ def handle_s3_documents_list(payload):
                         docs.append({
                             "filename": fname,
                             "chunk_count": len(chunks),
-                            "s3_path": meta.get('s3_path', f"s3://{bucket_name}/{key}"),
+                            "s3_path": f"s3://{bucket_name}/documents/{fname}",
                             "sample_text": chunks[0][:150] if chunks else ""
                         })
                     except Exception:
                         pass
-            return {"status": "success", "documents": docs, "total": len(docs), "realtime_s3": True}
+            return {"status": "success", "documents": docs, "total": len(docs), "realtime_s3": True, "bucket_name": bucket_name}
         except ClientError as e:
-            # If stack is deleted or bucket doesn't exist, return empty list and purge local cache!
             err_code = e.response.get('Error', {}).get('Code', '')
             if err_code in ['NoSuchBucket', 'AccessDenied', '404', 'ResourceNotFoundException']:
                 local_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 's3_vectors')
@@ -1155,12 +1176,12 @@ def handle_s3_documents_list(payload):
                         docs.append({
                             "filename": fname,
                             "chunk_count": len(chunks),
-                            "s3_path": meta.get('s3_path', f"s3://agentic-mcp-knowledge-base/documents/{fname}"),
+                            "s3_path": f"s3://{bucket_name}/documents/{fname}",
                             "sample_text": chunks[0][:150] if chunks else ""
                         })
                 except Exception:
                     pass
-    return {"status": "success", "documents": docs, "total": len(docs)}
+    return {"status": "success", "documents": docs, "total": len(docs), "bucket_name": bucket_name}
 
 def handle_mlops_pipeline_run(payload):
     stage = payload.get('stage', 'all')

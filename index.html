@@ -3602,11 +3602,26 @@ def handler(event, context):
       const badge = document.getElementById('rag-doc-count-badge');
       if (!pillsContainer) return;
 
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const creds = saved ? JSON.parse(saved) : {};
+
       try {
-        const res = await fetch('/api/s3/documents', { credentials: 'same-origin' });
+        const res = await fetch('/api/s3/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_key: creds.accessKey,
+            secret_key: creds.secretKey,
+            region: creds.region || 'us-east-1'
+          })
+        });
         const data = await res.json();
         if (data.status === 'success' && data.documents && data.documents.length > 0) {
           window.RAG_DOCUMENTS = data.documents;
+          if (data.bucket_name) {
+            window.STATE = window.STATE || {};
+            window.STATE.s3BucketName = data.bucket_name;
+          }
           if (badge) badge.innerText = data.documents.length;
           
           let html = '';
