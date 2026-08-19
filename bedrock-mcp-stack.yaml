@@ -503,7 +503,7 @@ Resources:
   SageMakerModelPackageGroup:
     Type: AWS::SageMaker::ModelPackageGroup
     Properties:
-      ModelPackageGroupName: !Sub "${AWS::StackName}-ModelRegistryGroup"
+      ModelPackageGroupName: !Sub "${AWS::StackName}-ModelRegistry"
       ModelPackageGroupDescription: "AWS SageMaker Model Registry for versioned fine-tuned LLaMA 3 PEFT adapters"
 
   MLOpsPipelineRole:
@@ -519,14 +519,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
 
-  MLOpsScheduledRetrainingRule:
-    Type: AWS::Events::Rule
-    Properties:
-      Name: !Sub "${AWS::StackName}-MLOpsRetrainingCron"
-      Description: "EventBridge cron schedule for continuous model retraining and data drift checks"
-      ScheduleExpression: "rate(7 days)"
-      State: ENABLED
-
   # =========================================================================
   # 7. PRIVATE SELF-HOSTED MODEL SERVERLESS INFERENCE LAYER ($0.00 Idle Cost)
   # =========================================================================
@@ -534,7 +526,6 @@ Resources:
   SageMakerExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-SageMakerExecutionRole"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -542,55 +533,10 @@ Resources:
             Principal:
               Service: sagemaker.amazonaws.com
             Action: sts:AssumeRole
-      Policies:
-        - PolicyName: SageMakerServerlessPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:ListBucket
-                Resource:
-                  - !Sub "arn:aws:s3:::${AgentKnowledgeBucket}"
-                  - !Sub "arn:aws:s3:::${AgentKnowledgeBucket}/*"
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: "*"
-
-  SageMakerPrivateModel:
-    Type: AWS::SageMaker::Model
-    Properties:
-      ModelName: !Sub "${AWS::StackName}-PrivateModel"
-      ExecutionRoleArn: !GetAtt SageMakerExecutionRole.Arn
-      PrimaryContainer:
-        Image: !Sub "763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-inference:2.1.0-transformers4.37.0-cpu-py310-ubuntu22.04"
-        Environment:
-          HF_MODEL_ID: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-          HF_TASK: "text-generation"
-          MAX_INPUT_LENGTH: "2048"
-          MAX_TOTAL_TOKENS: "4096"
-
-  SageMakerServerlessEndpointConfig:
-    Type: AWS::SageMaker::EndpointConfig
-    Properties:
-      EndpointConfigName: !Sub "${AWS::StackName}-ServerlessEndpointConfig"
-      ProductionVariants:
-        - VariantName: AllTraffic
-          ModelName: !GetAtt SageMakerPrivateModel.ModelName
-          ServerlessConfig:
-            MemorySizeInMB: 6144
-            MaxConcurrency: 5
-
-  SageMakerServerlessEndpoint:
-    Type: AWS::SageMaker::Endpoint
-    Properties:
-      EndpointName: !Sub "${AWS::StackName}-PrivateModelEndpoint"
-      EndpointConfigName: !GetAtt SageMakerServerlessEndpointConfig.EndpointConfigName
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
 
 Outputs:
   ApiEndpoint:
@@ -617,6 +563,6 @@ Outputs:
     Description: "SageMaker Model Registry Package Group Name"
     Value: !Ref SageMakerModelPackageGroup
 
-  SageMakerPrivateEndpointName:
-    Description: "Private SageMaker Serverless Inference Endpoint Name"
-    Value: !Ref SageMakerServerlessEndpoint
+  SageMakerExecutionRoleArn:
+    Description: "SageMaker Execution Role ARN for Private Model Deployment"
+    Value: !GetAtt SageMakerExecutionRole.Arn
