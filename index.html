@@ -3416,6 +3416,7 @@ def handler(event, context):
 
       try {
         setNodeState('agent', 'active', 'REASONING');
+        const selectedModelHost = document.querySelector('input[name="model-host"]:checked')?.value || 'bedrock';
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3424,7 +3425,8 @@ def handler(event, context):
             session_id: activeSessionId,
             access_key: creds.accessKey,
             secret_key: creds.secretKey,
-            region: creds.region || 'us-east-1'
+            region: creds.region || 'us-east-1',
+            model_host: selectedModelHost
           })
         });
 
