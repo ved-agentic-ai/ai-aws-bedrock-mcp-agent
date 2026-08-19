@@ -4621,12 +4621,18 @@ def handler(event, context):
         if (el) { el.classList.remove('mlops-stage-active', 'mlops-stage-passed'); }
       });
 
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const creds = saved ? JSON.parse(saved) : {};
+      const reg = creds.region || 'us-east-1';
+      const bkt = window.STATE?.s3BucketName || `agentic-mcp-training-data-${reg}`;
+      const regGrp = window.STATE?.modelRegistryGroup || 'BedrockMcpAgentStack-ModelRegistry';
+
       const steps = [
-        { idx: 0, text: '[Stage 1/6] Ingesting & formatting 1,250 company policy documents to s3://agentic-mcp-training-data/dataset.jsonl...' },
+        { idx: 0, text: `[Stage 1/6] Ingesting & formatting company policy documents to s3://${bkt}/dataset.jsonl...` },
         { idx: 1, text: '[Stage 2/6] Running EventBridge Data Drift & KS-Test validation -> KS Score: 0.012 (Data Drift: NONE, Quality: 99.8%)...' },
         { idx: 2, text: '[Stage 3/6] Starting QLoRA 4-bit NF4 Spot GPU Retraining (Epoch 1: 2.45 -> Epoch 2: 1.24 -> Epoch 3: 0.2814 Loss)...' },
         { idx: 3, text: '[Stage 4/6] Automated Benchmark Evaluation -> ROUGE-L: 0.892 | BLEU: 0.814 | Hallucination Rate: 0.02% (PASSED)...' },
-        { idx: 4, text: '[Stage 5/6] Registering Model Package in SageMaker Model Registry -> ARN: arn:aws:sagemaker:us-east-1:123456789012:model-package/AcctCorp-Llama3-v1.0.0-PROD...' },
+        { idx: 4, text: `[Stage 5/6] Registering Model Package in SageMaker Model Registry -> ARN: arn:aws:sagemaker:${reg}:aws-account:model-package/${regGrp}-v1.0.0-PROD...` },
         { idx: 5, text: '[Stage 6/6] Zero-downtime Serverless Endpoint Deployment Complete! Endpoint Status: IN_SERVICE (Private VPC, $0.00 Idle Cost).' }
       ];
 
