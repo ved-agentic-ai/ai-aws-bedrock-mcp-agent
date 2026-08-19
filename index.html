@@ -4309,8 +4309,9 @@ def handler(event, context):
           })
         });
         const d = await res.json();
+        const activeBucket = d.bucket_name || window.STATE?.s3BucketName || `agentic-mcp-knowledge-base-${creds.region || 'us-east-1'}`;
         if (countEl) countEl.innerText = `${d.s3_objects_count || 0} Objects (Auto-Purge Pending)`;
-        if (bucketEl) bucketEl.innerText = d.bucket_name || 'bedrockmcpagentstack-agentknowledgebucket-sqaxqazikql3';
+        if (bucketEl) bucketEl.innerText = activeBucket;
       } catch (err) {
         if (countEl) countEl.innerText = '1+ Objects (Auto-Purge Pending)';
       }
@@ -4701,7 +4702,7 @@ def handler(event, context):
               <span style="font-size: 14px;">📄</span>
               <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                 <div style="font-weight: 700; color: #38bdf8;">${escapeHtml(doc.filename)}</div>
-                <div style="font-size: 9.5px; color: #10b981; font-family: var(--font-mono);">${escapeHtml(doc.s3_uri || `s3://bedrockmcpagentstack-agentknowledgebucket-sqaxqazikql3/documents/${doc.filename}`)} • ${doc.chunks.length} vector chunks</div>
+                <div style="font-size: 9.5px; color: #10b981; font-family: var(--font-mono);">${escapeHtml(doc.s3_uri || `s3://${window.STATE?.s3BucketName || 'agentic-mcp-knowledge-base'}/documents/${doc.filename}`)} • ${doc.chunks.length} vector chunks</div>
               </div>
             </div>
             <button class="btn-action" style="padding: 2px 6px; font-size: 9.5px; background: #7f1d1d; color: #fca5a5; border-color: #ef4444;" onclick="removeS3Document(${idx})">🗑️ Delete</button>
@@ -4726,6 +4727,7 @@ def handler(event, context):
       const ext = file.name.split('.').pop().toUpperCase() || 'DOC';
       const savedConfig = localStorage.getItem(STORAGE_KEY);
       const creds = savedConfig ? JSON.parse(savedConfig) : {};
+      const bucketName = window.STATE?.s3BucketName || `agentic-mcp-knowledge-base-${creds.region || 'us-east-1'}`;
       
       const reader = new FileReader();
       reader.onload = async function(e) {
@@ -4733,7 +4735,7 @@ def handler(event, context):
         showToast('Uploading to S3 Bucket', `Uploading ${file.name} to active CloudFormation S3 bucket...`, 'info');
         addLog('S3 UPLOAD', 'tag-mcp', `Initiating Boto3 S3 put_object for ${file.name}...`);
 
-        let s3Uri = `s3://bedrockmcpagentstack-agentknowledgebucket-sqaxqazikql3/documents/${file.name}`;
+        let s3Uri = `s3://${bucketName}/documents/${file.name}`;
         let cleanChunks = [`Extracted content from ${file.name}`];
 
         try {

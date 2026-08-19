@@ -897,7 +897,7 @@ def get_physical_s3_bucket(payload):
                 return bucket
     except Exception:
         pass
-    return "bedrockmcpagentstack-agentknowledgebucket-sqaxqazikql3"
+    return f"agentic-mcp-knowledge-base-{region}"
 
 def handle_s3_bucket(payload):
     bucket_name = get_physical_s3_bucket(payload)
