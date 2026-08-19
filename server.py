@@ -1,4 +1,5 @@
-from wsgiref.simple_server import make_server
+from wsgiref.simple_server import make_server, WSGIServer, WSGIRequestHandler
+from socketserver import ThreadingMixIn
 import json
 import os
 import re
@@ -7,6 +8,10 @@ import base64
 import io
 import boto3
 from botocore.exceptions import ClientError
+
+class ThreadingWSGIServer(ThreadingMixIn, WSGIServer):
+    daemon_threads = True
+    allow_reuse_address = True
 
 PORT = 3000
 STACK_NAME = "BedrockMcpAgentStack"
@@ -79,8 +84,7 @@ def app(environ, start_response):
         start_response('200 OK', [
             ('Content-Type', 'application/json'),
             ('Content-Length', str(len(body_bytes))),
-            ('Access-Control-Allow-Origin', '*'),
-            ('Connection', 'close')
+            ('Access-Control-Allow-Origin', '*')
         ])
         return [body_bytes]
 
@@ -88,8 +92,7 @@ def app(environ, start_response):
         start_response('200 OK', [
             ('Access-Control-Allow-Origin', '*'),
             ('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'),
-            ('Access-Control-Allow-Headers', 'Content-Type'),
-            ('Connection', 'close')
+            ('Access-Control-Allow-Headers', 'Content-Type')
         ])
         return [b'']
 
@@ -1304,6 +1307,6 @@ def handle_model_inference(payload):
 if __name__ == '__main__':
     import time
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    with make_server('0.0.0.0', PORT, app) as httpd:
-        print(f"[SERVER_SUCCESS] WSGI Server running on 0.0.0.0:{PORT}", flush=True)
+    with make_server('0.0.0.0', PORT, app, server_class=ThreadingWSGIServer) as httpd:
+        print(f"[SERVER_SUCCESS] High-Concurrency Threaded WSGI Server running on 0.0.0.0:{PORT}", flush=True)
         httpd.serve_forever()
